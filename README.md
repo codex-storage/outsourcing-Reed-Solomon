@@ -14,4 +14,4 @@ the original dataset.
 The core idea is to use the FRI (or similar) low-degree test as a proof of
 correct Reed-Solomon encoding.
 
-See [docs/Overview.md](docs/Outsourcing.md) for more details.
+See [docs/Overview.md](docs/Overview.md) for more details.
