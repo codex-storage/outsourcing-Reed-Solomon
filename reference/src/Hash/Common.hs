@@ -7,6 +7,8 @@ import Data.Array
 import Data.Bits
 import Data.Word
 
+import Data.Binary
+
 import Field.Goldilocks
 import Field.Encode
 
@@ -51,6 +53,10 @@ zeroState hash = zeroState' (hashT hash)
 data Digest 
   = MkDigest !F !F !F !F
   deriving (Eq,Show)
+
+instance Binary Digest where
+  put (MkDigest a b c d) = put a >> put b >> put c >> put d
+  get = MkDigest <$> get <*> get <*> get <*> get
 
 instance FieldEncode Digest where
   fieldEncode (MkDigest a b c d) = [a,b,c,d]

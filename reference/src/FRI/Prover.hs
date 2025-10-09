@@ -187,8 +187,8 @@ data CommitPhaseData = MkCommitPhaseData
 -- * fold the polynomial and also the domain
 --
 
-repeatedlyFoldPoly :: FriConfig -> [Arity] -> Coset F -> Poly FExt -> DuplexIO ( [CommitPhaseData] , Poly FExt )
-repeatedlyFoldPoly (MkFriConfig{..}) arities domain poly = go arities domain poly where
+repeatedlyFoldPoly :: FriConfig -> ReductionStrategy -> Coset F -> Poly FExt -> DuplexIO ( [CommitPhaseData] , Poly FExt )
+repeatedlyFoldPoly (MkFriConfig{..}) (MkRedStrategy arities) domain poly = go arities domain poly where
   go []           domain poly = return ( [] , poly )
   go (arity:rest) domain poly = do
     let intArity = exp2_ arity                                  -- size of the folded coset

@@ -14,6 +14,8 @@ import Data.Ratio
 
 import System.Random
 
+import Data.Binary
+
 import Field.Goldilocks ( F )
 
 --------------------------------------------------------------------------------
@@ -26,6 +28,10 @@ data F2 = F2
   }
   deriving (Eq)
 
+instance Binary F2 where
+  put (F2 x y) = put x >> put y
+  get = F2 <$> get <*> get
+  
 instance Show F2 where
   show (F2 r i) = "[ " ++ show r ++ " + j * " ++ show i ++ " ]"
 

@@ -16,6 +16,8 @@ import Control.Monad.ST.Strict
 
 import System.Random
 
+import Data.Binary
+
 import Field.Goldilocks
 import Field.Goldilocks.Extension ( FExt )
 import Field.Encode
@@ -29,6 +31,10 @@ import Misc
 newtype Poly a 
   = Poly (Array Int a) 
   deriving (Show,Functor)
+
+instance Binary a => Binary (Poly a) where
+  put (Poly arr) = putSmallArray arr
+  get = Poly <$> getSmallArray
 
 instance (Num a, Eq a) => Eq (Poly a) where
   p == q = polyIsZero (polySub p q)

@@ -4,6 +4,10 @@ module FRI.Types where
   
 --------------------------------------------------------------------------------
 
+import Control.Monad
+import Data.Binary
+import qualified Data.ByteString.Lazy as L
+
 import Field.Goldilocks
 import Field.Goldilocks.Extension ( FExt , F2(..) )
 import Field.Encode
@@ -43,6 +47,13 @@ data RSConfig = MkRSConfig
   }
   deriving (Eq,Show)
 
+instance Binary RSConfig where
+  put (MkRSConfig{..}) = do
+    put rsRateBits  
+    put rsDataSize  
+    put rsCosetShift
+  get = MkRSConfig <$> get <*> get <*> get
+   
 exampleRSConfig :: RSConfig
 exampleRSConfig = MkRSConfig 8 3 theMultiplicativeGenerator
 
@@ -71,7 +82,17 @@ instance Print RSConfig where
 -- | Folding arity
 type Arity = Log2
 
-type ReductionStrategy = [Arity]
+newtype ReductionStrategy = MkRedStrategy 
+  { fromReductionStrategy :: [Arity] 
+  }
+  deriving (Eq,Show)
+
+instance Binary ReductionStrategy where
+  put = putSmallList . fromReductionStrategy
+  get = MkRedStrategy <$> getSmallList
+
+instance FieldEncode ReductionStrategy where
+  fieldEncode = fieldEncode . fromReductionStrategy
 
 -- | FRI configuration
 data FriConfig = MkFriConfig 
@@ -84,12 +105,22 @@ data FriConfig = MkFriConfig
   }
   deriving (Eq,Show)
 
+instance Binary FriConfig where
+  put (MkFriConfig{..}) = do
+    put friRSConfig          
+    put friNColumns          
+    put friMerkleCapSize     
+    put friReductionStrategy 
+    put friNQueryRounds      
+    put friGrindingBits      
+  get = MkFriConfig <$> get <*> get <*> get <*> get <*> get <*> get
+
 instance Print FriConfig where
   showWithIndent indent (MkFriConfig{..}) = 
     [ " - friRSConfig\n"           ++ unlines1 (showWithIndent (indent+2) friRSConfig)
     , " - friNColumns          = " ++ show friNColumns         
     , " - friMerkleCapSize     = " ++ show friMerkleCapSize    
-    , " - friReductionStrategy = " ++ show (map fromLog2 friReductionStrategy)
+    , " - friReductionStrategy = " ++ show (map fromLog2 $ fromReductionStrategy friReductionStrategy)
     , " - friNQueryRounds      = " ++ show friNQueryRounds     
     , " - friGrindingBits      = " ++ show friGrindingBits     
     ]
@@ -133,7 +164,7 @@ defaultReductionStrategyParams = MkRedStratPars
   }
 
 findReductionStrategy :: ReductionStrategyParams -> RSConfig -> ReductionStrategy
-findReductionStrategy (MkRedStratPars{..}) (MkRSConfig{..}) = worker (rsDataSize + rsRateBits) where
+findReductionStrategy (MkRedStratPars{..}) (MkRSConfig{..}) = MkRedStrategy $ worker (rsDataSize + rsRateBits) where
   worker k 
     | k <= redStoppingDegree                    = []
     | k >= redStoppingDegree + redFoldingArity  = redFoldingArity : worker (k - redFoldingArity)
@@ -161,6 +192,43 @@ data FriProof = MkFriProof
   , proofQueryRounds     :: [FriQueryRound]    -- ^ query rounds
   , proofPowWitness      :: F                  -- ^ witness showing that the prover did PoW
   }
-  deriving Show
+  deriving (Eq,Show)
+
+----------------------------------------
+
+friProofSizeInBytes :: FriProof -> Int
+friProofSizeInBytes friProof = fromIntegral $ L.length (encode friProof)
+
+instance Binary FriQueryStep where
+  put (MkFriQueryStep{..}) = do
+    putSmallList queryEvals
+    put          queryMerklePath
+  get =  MkFriQueryStep 
+     <$> getSmallList
+     <*> get
+
+instance Binary FriQueryRound where
+  put (MkFriQueryRound{..}) = do
+    putSmallArray queryRow
+    put           queryInitialTreeProof
+    putSmallList  querySteps
+  get =  MkFriQueryRound
+     <$> getSmallArray
+     <*> get
+     <*> getSmallList
+
+instance Binary FriProof where
+  put (MkFriProof{..}) = do
+    put          proofFriConfig       
+    putSmallList proofCommitPhaseCaps 
+    put          proofFinalPoly       
+    putSmallList proofQueryRounds     
+    put          proofPowWitness      
+  get =  MkFriProof
+     <$> get
+     <*> getSmallList
+     <*> get
+     <*> getSmallList
+     <*> get
 
 --------------------------------------------------------------------------------

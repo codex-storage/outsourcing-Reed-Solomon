@@ -7,6 +7,9 @@ import Data.Array
 import Text.Show.Pretty
 import System.Random
 
+import Data.Binary
+import qualified Data.ByteString.Lazy as L
+
 import Hash.Duplex.Monad
 import FRI
 import Misc
@@ -89,7 +92,12 @@ main = do
   pPrint commits
   pPrint friProof
 
-  ok <- runDuplexIO_ (verifyFRI (_ldeCommitment commits) friProof)
-  putStrLn $ "verify FRI succeed = " ++ show ok
+  let lbs = encode friProof
+  let friProof' = decode lbs
+  putStrLn $ "size of the serialized proof = " ++ show (L.length lbs)
+  putStrLn $ "could serialize proof and then load back unchanged = " ++ show (friProof == friProof')
+
+--  ok <- runDuplexIO_ (verifyFRI (_ldeCommitment commits) friProof)
+--  putStrLn $ "verify FRI succeed = " ++ show ok
 
 --------------------------------------------------------------------------------

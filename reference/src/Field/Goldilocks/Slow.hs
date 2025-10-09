@@ -15,6 +15,10 @@ import Data.Ratio
 
 import System.Random
 
+import Data.Binary
+import Data.Binary.Get ( getWord64le )
+import Data.Binary.Put ( putWord64le )
+
 import Text.Printf
 
 --------------------------------------------------------------------------------
@@ -29,6 +33,10 @@ toF = mkGoldilocks . fromIntegral
 
 intToF :: Int -> F
 intToF = mkGoldilocks . fromIntegral
+
+instance Binary F where
+  put x = putWord64le (fromF x)
+  get = toF <$> getWord64le
 
 --------------------------------------------------------------------------------
 

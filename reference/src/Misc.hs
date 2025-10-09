@@ -9,6 +9,9 @@ import Data.List
 
 import qualified Data.Set as Set ; import Data.Set (Set)
 
+import Control.Monad
+import Data.Binary
+
 import Debug.Trace
 
 --------------------------------------------------------------------------------
@@ -173,5 +176,40 @@ extractCosetArray offset stride input
 -- | This extracts a subarray with indices of the form @[ i*stride | i<-[0..n-1] ]@
 extractSubgroupArray :: Int -> Array Int a -> Array Int a
 extractSubgroupArray stride = extractCosetArray 0 stride
+
+--------------------------------------------------------------------------------
+-- * Binary encoding
+
+instance Binary Log2 where
+  put (Log2 k) = putWord8 (fromIntegral k)
+  get = (Log2 . fromIntegral) <$> getWord8
+
+putSmallList :: Binary a => [a] -> Put
+putSmallList list = do
+  let n = length list
+  if (n < 256)
+    then do 
+      putWord8 (fromIntegral n)
+      mapM_ put list
+    else error "putSmallList: array length >= 256"
+
+getSmallList :: Binary a => Get [a]
+getSmallList = do
+  len <- fromIntegral <$> getWord8 :: Get Int
+  replicateM len get
+
+putSmallArray :: Binary a => Array Int a -> Put
+putSmallArray list = do
+  let n = arrayLength list
+  if (n < 256)
+    then do 
+      putWord8 (fromIntegral n)
+      mapM_ put list
+    else error "putSmallArray: array length >= 256"
+
+getSmallArray :: Binary a => Get (Array Int a)
+getSmallArray = do
+  len <- fromIntegral <$> getWord8 :: Get Int
+  listToArray <$> replicateM len get
 
 --------------------------------------------------------------------------------

@@ -22,6 +22,9 @@ module Hash.Merkle where
 import Data.Array
 import Data.Bits
 
+import Control.Monad
+import Data.Binary
+
 import Field.Goldilocks
 import Field.Goldilocks.Extension ( FExt , F2(..) )
 import Field.Encode
@@ -73,6 +76,10 @@ hashAny = hashFieldElems theHashFunction . fieldEncode
 newtype MerkleCap 
   = MkMerkleCap { fromMerkleCap :: Array Int Digest }
   deriving (Eq,Show)
+
+instance Binary MerkleCap where
+  put = putSmallArray . fromMerkleCap
+  get = MkMerkleCap <$> getSmallArray
 
 instance FieldEncode MerkleCap where
   fieldEncode (MkMerkleCap arr) = concatMap fieldEncode (elems arr)
@@ -132,6 +139,13 @@ treeBottomLayer (MkMerkleTree outer _) = outer!0
 newtype RawMerklePath
   = MkRawMerklePath [Digest]
   deriving (Eq,Show)
+
+fromRawMerklePath :: RawMerklePath -> [Digest]
+fromRawMerklePath (MkRawMerklePath ds) = ds
+
+instance Binary RawMerklePath where
+  put = putSmallList . fromRawMerklePath
+  get = MkRawMerklePath <$> getSmallList
 
 instance FieldEncode RawMerklePath where
   fieldEncode (MkRawMerklePath ds) = concatMap fieldEncode ds
