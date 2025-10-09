@@ -11,7 +11,7 @@ The concept is simple: If we encode $K$ data symbols into $N$ code symbols, then
 
 In "old Codex", this encoding (together with the network-level erasure coding) was done by the client before uploading. 
 
-However, it would preferable to outsource the local encoding to the providers, for several reasons:
+However, it would be preferable to outsource the local encoding to the providers, for several reasons:
 
 - the providers typically have more computational resources than the clients (especially if the client is for example a mobile phone)
 - because the network chunks are hold by different providers, the work could be distributed among several providers, further decreasing the per-person work
@@ -62,7 +62,7 @@ with a randomly chosen $0\neq\alpha\in\mathbb{F}$ (choosen by the verifier or vi
 
 Note: If the field is not big enough, you may need to either repeat this with several different $\alpha$-s, or consider a field extension. This is the case for example with the Goldilocks field, which has size $|\mathbb{F}|\approx 2^{64}$. Plonky2 for example choses $\alpha\in\widetilde{\mathbb{F}}$ from a degree two field extension $\widetilde{\mathbb{F}}$ (so approx. 128 bits), which is big enough for any practical purposes. FRI is then executed in that bigger field.
 
-This approach has another nice consequence: Now instead of doing one big RS encoding, we have to do many smaller ones. This is good, because:
+This approach has another nice consequences: Now instead of doing one big RS encoding, we have to do many smaller ones. This is good, because:
 
 - that's always faster (because of the $O(N\log(N))$ scaling of FFT)
 - it needs much less memory
@@ -76,7 +76,7 @@ We need to choose a prime field (but see below) for the Reed-Solomon encoding, a
 
 Just for executing the FRI protocol, the hash function could be any (cryptographic) hash, and we could even use different hash functions for constructing the row hashes and the Merkle tree. However, if in the future we want to do recursive proof aggregation, then since in that situation the Merkle path proofs need to be to be calculated inside ZK too, it's better to choose a ZK-friendly hash.
 
-With these in mind, a reasonable choice seems to be the Goldilocks field ($p=2^{64}-2^{32}+1$) and the Monolith hash function (which is one of the fastest ZK-friendly hashes). This way the Reed-Solomon encoding and the hash function uses a compatible structure.
+With these in mind, a reasonable choice seems to be the Goldilocks field ($p=2^{64}-2^{32}+1$) and the Monolith hash function (which is one of the fastest ZK-friendly hashes). This way the Reed-Solomon encoding and the hash function use a compatible structure.
 
 Remark: While in principle both FFT and FRI should work with a binary field instead of a prime field (see eg. FRI-Binius), I'm not at all familiar with those variations, so let's leave that for future work. Also, if we want to do recursive proof aggregation, again using prime fields for such proof systems is more common (but again, in principle that should be possible too with a binary field).
 
@@ -128,7 +128,7 @@ Another subtle issue is how to order this data on the disk. Unfortunately spinni
 What are our typical access patterns?
 
 - to do the FFT encoding, we need to access all the columns, independently (and then they will be processed in parallel)
-- to do the query phase of the FRI protocol, we need to access some randomly selected rows (maybe 50--100 of them)
+- to do the query phase of the FRI protocol, we need to access some randomly selected rows (maybe 50--100 of them), and also the full dataset in a form of the "combined polynomial"
 - when doing the randomly sampled "storage proofs" (which is supposed to happen periodically!), again we need to access random rows
 
 Accessing both rows and columns efficiently is pretty much contradictory to each other...
