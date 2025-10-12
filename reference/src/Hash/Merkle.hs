@@ -14,7 +14,7 @@ Conventions:
 
 -}
 
-{-# LANGUAGE StrictData #-}
+{-# LANGUAGE StrictData, RecordWildCards #-}
 module Hash.Merkle where
 
 --------------------------------------------------------------------------------
@@ -24,6 +24,8 @@ import Data.Bits
 
 import Control.Monad
 import Data.Binary
+
+import Text.Show.Pretty
 
 import Field.Goldilocks
 import Field.Goldilocks.Extension ( FExt , F2(..) )
@@ -143,6 +145,12 @@ newtype RawMerklePath
 fromRawMerklePath :: RawMerklePath -> [Digest]
 fromRawMerklePath (MkRawMerklePath ds) = ds
 
+rawMerklePathLength :: RawMerklePath -> Int
+rawMerklePathLength (MkRawMerklePath ds) = length ds
+
+rawMerklePathLength2 :: RawMerklePath -> Log2
+rawMerklePathLength2 path = Log2 (rawMerklePathLength path)
+
 instance Binary RawMerklePath where
   put = putSmallList . fromRawMerklePath
   get = MkRawMerklePath <$> getSmallList
@@ -176,6 +184,34 @@ extractMerkleProof' (Log2 capDepth) tree@(MkMerkleTree outer leaves) idx = MkMer
     this = outer ! (depth - level) ! (j `xor` 1)
 
   takePrefix = take (depth - capDepth)
+
+--------------------------------------------------------------------------------
+
+checkMerkleRootProof :: FieldEncode a => Digest -> MerkleProof a -> Bool
+checkMerkleRootProof root proof = reconstructMerkleRoot proof == root 
+
+checkMerkleCapProof :: FieldEncode a => MerkleCap -> MerkleProof a -> Bool
+-- checkMerkleCapProof = error "checkMerkleCapProof: not yet implemented"
+checkMerkleCapProof (MkMerkleCap cap) (MkMerkleProof{..}) = result where
+
+  result = go _dataSize _leafIndex (hashAny _leafData) (fromRawMerklePath _merklePath) layerFlags
+
+  capSize = arraySize cap
+
+  go :: Int -> Int -> Digest -> [Digest] -> [LayerFlag] -> Bool
+  go n j hash [] _layerFlags = if n /= capSize
+    then error "checkMerkleCapProof: fatal error: cap size doesn't match"
+    else (hash == cap!j)
+  go n j hash (sibling:siblings') (layerf:layerfs') = go n' j' hash' siblings' layerfs' 
+    where
+      j' = shiftR  j    1
+      n' = shiftR (n+1) 1
+      jparity = j .&. 1
+      oddflag = if (j+1 == n) && (jparity == 0) then OddNode else EvenNode
+      key     = nodeKey layerf oddflag
+      hash'   = case jparity of 
+        0 -> keyedCompress theHashFunction key hash    sibling
+        1 -> keyedCompress theHashFunction key sibling hash
 
 --------------------------------------------------------------------------------
 
@@ -310,3 +346,17 @@ calcMerkleCap :: FieldEncode a => Log2 -> [a] -> MerkleCap
 calcMerkleCap capDepth = calcMerkleCap' capDepth . map hashAny  
 
 --------------------------------------------------------------------------------
+
+{-
+exLeaves :: [[F]]
+exLeaves = [ leaf (fromInteger i) | i<-[1..8] ] where
+  leaf :: F -> [F]
+  leaf i = [ 10*i , 10*i+1 , 10*i+2 ]
+
+exTree   = calcMerkleTree exLeaves
+exCap    = extractMerkleCap (Log2 1) exTree
+exIdx    = 2
+exProof  = extractMerkleProof' (Log2 1) exTree exIdx
+exSanity = checkMerkleCapProof exCap exProof
+-}
+

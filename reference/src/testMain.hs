@@ -84,6 +84,7 @@ main = do
   printSeparator
 
   setStdGen (mkStdGen 1337)    -- make it deterministic
+  -- setStdGen (mkStdGen 133756)
 
   justPrint friConfig
   printSeparator
@@ -97,7 +98,12 @@ main = do
   putStrLn $ "size of the serialized proof = " ++ show (L.length lbs)
   putStrLn $ "could serialize proof and then load back unchanged = " ++ show (friProof == friProof')
 
---  ok <- runDuplexIO_ (verifyFRI (_ldeCommitment commits) friProof)
---  putStrLn $ "verify FRI succeed = " ++ show ok
+  let vkey = MkFriVerifierKey
+        { vkeyFriConfig = friConfig
+        , vkeyMatrixCap = _ldeCommitment commits
+        }
+
+  ok <- runDuplexIO_ (verifyFRI vkey friProof)
+  putStrLn $ "verify FRI succeed = " ++ show ok
 
 --------------------------------------------------------------------------------

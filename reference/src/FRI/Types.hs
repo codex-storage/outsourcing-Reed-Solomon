@@ -94,6 +94,24 @@ instance Binary ReductionStrategy where
 instance FieldEncode ReductionStrategy where
   fieldEncode = fieldEncode . fromReductionStrategy
 
+-- | Computes the sizes of the commit phase committed vectors + the size of the final polynomial
+computeCommitPhaseFullSizes :: RSConfig -> ReductionStrategy -> ( [Log2] , Log2 )
+computeCommitPhaseFullSizes rsConfig (MkRedStrategy arities) = go (rsEncodedSize rsConfig) arities where
+  go :: Log2 -> [Log2] -> ( [Log2] , Log2 )
+  go logN []     = ( [] , logN )
+  go logN (a:as) = let (        sizes , final ) = go (logN-a) as
+                   in  ( logN : sizes , final )
+
+-- | As the leafs of the commit phase Merkle trees are in fact \"folding cosets\", 
+-- the actual Merkle trees are smaller (less leaves)
+computeCommitPhaseMerkleSizes :: RSConfig -> ReductionStrategy -> ( [Log2] , Log2 )
+computeCommitPhaseMerkleSizes rsConfig (MkRedStrategy arities) = go (rsEncodedSize rsConfig) arities where
+  go logN []     = ( [] , logN )
+  go logN (a:as) = let (          sizes , final ) = go (logN-a) as
+                   in  ( logN-a : sizes , final )
+
+--------------------------------------------------------------------------------
+
 -- | FRI configuration
 data FriConfig = MkFriConfig 
   { friRSConfig          :: RSConfig             -- ^ Reed-Solomon configuration
@@ -140,16 +158,6 @@ instance FieldEncode FriConfig where
 
 --------------------------------------------------------------------------------
 
-data FriChallenges = MkFriChallenges
-  { friAlpha          :: FExt          -- ^ column linear combination coefficient
-  , friBetas          :: [FExt]        -- ^ folding step betas
-  , friGrindResponse  :: F             -- ^ the PoW response (computed via Fiat-Shamir), which should have predetermined bit patterns
-  , friQueryIndices   :: [Int]         -- ^ query indices
-  }
-  deriving (Eq,Show)
-
---------------------------------------------------------------------------------
-
 data ReductionStrategyParams = MkRedStratPars
   { redStoppingDegree :: Log2             -- ^ stopping degree        
   , redFoldingArity   :: Log2             -- ^ default folding arity
@@ -169,6 +177,17 @@ findReductionStrategy (MkRedStratPars{..}) (MkRSConfig{..}) = MkRedStrategy $ wo
     | k <= redStoppingDegree                    = []
     | k >= redStoppingDegree + redFoldingArity  = redFoldingArity : worker (k - redFoldingArity)
     | otherwise                                 = [ k - redStoppingDegree ]
+
+--------------------------------------------------------------------------------
+
+-- | Only used in the verifier (but for debugging purposes only, also in the prover...)
+data FriChallenges = MkFriChallenges
+  { friAlpha          :: FExt          -- ^ column linear combination coefficient
+  , friBetas          :: [FExt]        -- ^ folding step betas
+  , friGrindResponse  :: F             -- ^ the PoW response (computed via Fiat-Shamir), which should have predetermined bit patterns
+  , friQueryIndices   :: [Int]         -- ^ query indices
+  }
+  deriving (Eq,Show)
 
 --------------------------------------------------------------------------------
 
@@ -195,6 +214,7 @@ data FriProof = MkFriProof
   deriving (Eq,Show)
 
 ----------------------------------------
+-- binary instances
 
 friProofSizeInBytes :: FriProof -> Int
 friProofSizeInBytes friProof = fromIntegral $ L.length (encode friProof)

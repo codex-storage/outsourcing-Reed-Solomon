@@ -57,7 +57,7 @@ polyDegree (Poly arr) = worker d0 where
     | arr!d /= 0   =  d
     | otherwise    = worker (d-1)
 
--- | Size of the polynomial
+-- | Size of the polynomial (can be larger than @degree + 1@, if the some top coefficients are zeros)
 polySize :: (Eq a, Num a) => Poly a -> Int
 polySize (Poly p) = arraySize p
 

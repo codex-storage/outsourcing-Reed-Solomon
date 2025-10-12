@@ -11,6 +11,8 @@ import Data.Word
 import Control.Monad.IO.Class
 import System.Random
 
+import Text.Show.Pretty
+
 import Field.Goldilocks           ( F          )
 import Field.Goldilocks.Extension ( FExt , scl )
 import Field.Encode
@@ -49,7 +51,7 @@ encodeAndProveFRI friConfig@(MkFriConfig{..}) dataMatrix =
     absorb finalPoly                                                   -- absorb the final final polynomial
     MkPoW powWitness powResponse <- performGrinding friGrindingBits    -- do the grinding
     queryIndices <- generateQueryIndices nn friNQueryRounds            -- generate query indices
-    let queries = map (singleQueryRound phases) queryIndices           -- execute the query rounds
+    queries <- liftIO $ mapM (singleQueryRound phases) queryIndices    -- execute the query rounds
 
     -- only for debugging purposes
     let challenges = MkFriChallenges
@@ -99,27 +101,42 @@ encodeAndProveFRI friConfig@(MkFriConfig{..}) dataMatrix =
       dataCoset  = MkCoset (powSubgroup ldeSubgroup expFactor) shift
       expFactor  = exp2_ rsRateBits
 
-    singleQueryRound :: [CommitPhaseData] -> Idx -> FriQueryRound
-    singleQueryRound phases queryIdx = result where
-      initialProof = extractMerkleProof' friMerkleCapSize matrixTree $ fullDomainIndexMapFwd friRSConfig queryIdx
-      result = MkFriQueryRound 
-        { queryRow              = _leafData   initialProof
-        , queryInitialTreeProof = _merklePath initialProof
-        , querySteps            = go phases queryIdx
-        }
+    singleQueryRound :: [CommitPhaseData] -> Idx -> IO FriQueryRound
+    singleQueryRound phases queryIdx  
+      | initialSanityOK = do
+          steps <- go phases queryIdx
+          return $ MkFriQueryRound 
+            { queryRow              = _leafData   initialProof
+            , queryInitialTreeProof = _merklePath initialProof
+            , querySteps            = steps
+            }
+      | otherwise = do
+          -- pPrint initialProof
+          fail "initial tree Merkle proof check failed"
+      where
+        initialProof    = extractMerkleProof' friMerkleCapSize matrixTree $ fullDomainIndexMapFwd friRSConfig queryIdx
+        initialSanityOK = checkMerkleCapProof (extractMerkleCap friMerkleCapSize matrixTree) initialProof
 
-      go :: [CommitPhaseData] -> Idx -> [FriQueryStep]
-      go []                             _   = []
-      go (MkCommitPhaseData{..} : rest) idx = thisStep : go rest idx' where
-        intArity    = exp2_ commitPhaseArity
-        domainSize' = Prelude.div (cosetSize commitPhaseDomain) intArity    -- N/K
-        idx'        = Prelude.mod idx domainSize'                           -- idx' = idx mod (N/K)
-        proof       = extractMerkleProof' friMerkleCapSize commitPhaseMerkleTree idx'
-        cosetValues = elems (_leafData proof)
-        thisStep    = MkFriQueryStep
-          { queryEvals      = cosetValues
-          , queryMerklePath = _merklePath proof
-          }
+        go :: [CommitPhaseData] -> Idx -> IO [FriQueryStep]
+        go []                             _   = return []
+        go (MkCommitPhaseData{..} : rest) idx 
+          | sanityOK = do
+              restSteps <- go rest idx'
+              return (thisStep : restSteps) 
+          | otherwise = do
+              -- pPrint proof
+              fail "commit phase Merkle proof sanity check failed" 
+          where
+            intArity    = exp2_ commitPhaseArity
+            domainSize' = Prelude.div (cosetSize commitPhaseDomain) intArity    -- N/K
+            idx'        = Prelude.mod idx domainSize'                           -- idx' = idx mod (N/K)
+            proof       = extractMerkleProof' friMerkleCapSize commitPhaseMerkleTree idx'
+            sanityOK    = checkMerkleCapProof (extractMerkleCap friMerkleCapSize commitPhaseMerkleTree) proof
+            cosetValues = elems (_leafData proof)
+            thisStep    = MkFriQueryStep
+              { queryEvals      = cosetValues
+              , queryMerklePath = _merklePath proof
+              }
 
 --------------------------------------------------------------------------------
 -- * Grinding

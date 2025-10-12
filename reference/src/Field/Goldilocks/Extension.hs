@@ -33,7 +33,7 @@ instance Binary F2 where
   get = F2 <$> get <*> get
   
 instance Show F2 where
-  show (F2 r i) = "[ " ++ show r ++ " + j * " ++ show i ++ " ]"
+  show (F2 r i) = "(" ++ show r ++ " + j * " ++ show i ++ ")"
 
 instance Num F2 where
   fromInteger = inj . fromIntegral

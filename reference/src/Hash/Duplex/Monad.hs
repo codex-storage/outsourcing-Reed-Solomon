@@ -65,6 +65,9 @@ type DuplexIO a = DuplexT IO a
 instance MonadIO (DuplexT IO) where 
   liftIO action = DuplexT (liftIO action)
 
+ioToDuplexIO :: IO a -> DuplexIO a
+ioToDuplexIO = liftIO
+
 duplexPutStrLn :: String -> DuplexIO ()
 duplexPutStrLn s = DuplexT (liftIO $ putStrLn s)
 

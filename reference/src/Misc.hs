@@ -1,4 +1,5 @@
 
+{-# LANGUAGE ScopedTypeVariables #-}
 module Misc where
 
 --------------------------------------------------------------------------------
@@ -22,6 +23,9 @@ debug_ x y = trace (">>> " ++ show x) y
 
 debug :: Show a => String -> a -> b -> b
 debug n x y = trace (">>> " ++ n ++ " = " ++ show x) y
+
+debugPrint :: Show a => String -> a -> IO ()
+debugPrint n x = putStrLn ("> " ++ n ++ " = " ++ show x)
 
 --------------------------------------------------------------------------------
 -- * Integers
@@ -47,13 +51,19 @@ newtype Log2
   deriving (Eq,Ord,Show,Num)
 
 fromLog2 :: Log2 -> Int
-fromLog2 (Log2 k) = k
+fromLog2 (Log2 k) 
+  | k >=0      = k
+  | otherwise  = error "fromLog2: negative exponent"
 
 exp2 :: Log2 -> Integer
-exp2 (Log2 k) = shiftL 1 k
+exp2 (Log2 k) 
+  | k >= 0     = shiftL 1 k
+  | otherwise  = error "exp2: negative exponent"
 
 exp2_ :: Log2 -> Int
-exp2_ (Log2 k) = shiftL 1 k
+exp2_ (Log2 k) 
+  | k >= 0     = shiftL 1 k
+  | otherwise  = error "exp2_: negative exponent"
 
 -- | Smallest integer @k@ such that @2^k@ is larger or equal to @n@
 ceilingLog2 :: Integer -> Log2
@@ -79,11 +89,32 @@ exactLog2__ = exactLog2_ . fromIntegral
 --------------------------------------------------------------------------------
 -- * Lists
 
+-- | just to avoid the annoying GHC warning
+myHead :: [a] -> a
+myHead (x:_) = x
+myHead []    = error "myHead: empty list"
+
 safeZipWith :: (a -> b -> c) -> [a] -> [b] -> [c]
 safeZipWith f = go where
   go []     []     = []
   go (x:xs) (y:ys) = f x y : go xs ys
   go _      _      = error "safeZipWith: incompatible lengths"
+
+safeZipWith3 :: (a -> b -> c -> d) -> [a] -> [b] -> [c] -> [d] 
+safeZipWith3 f = go where
+  go []     []     []     = []
+  go (x:xs) (y:ys) (z:zs) = f x y z : go xs ys zs 
+  go _      _      _      = error "safeZipWith3: incompatible lengths"
+
+safeZipWith4 :: (a -> b -> c -> d -> e) -> [a] -> [b] -> [c] -> [d] -> [e]
+safeZipWith4 f = go where
+  go []     []     []     []     = []
+  go (x:xs) (y:ys) (z:zs) (w:ws) = f x y z w : go xs ys zs ws
+  go _      _      _      _      = error "safeZipWith4: incompatible lengths"
+
+safeZip  = safeZipWith  (,)
+safeZip3 = safeZipWith3 (,,)
+safeZip4 = safeZipWith4 (,,,)
 
 interleave :: [a] -> [a] -> [a]
 interleave (x:xs) (y:ys) = x:y:interleave xs ys
@@ -101,6 +132,59 @@ nubOrd = worker Set.empty where
   worker s (x:xs) 
     | Set.member x s = worker s xs
     | otherwise      = x : worker (Set.insert x s) xs
+
+--------------------------------------------------------------------------------
+-- * Monads
+
+-- WTF, this is not in @base@ but 'Maybe' is?!
+instance MonadFail (Either String) where
+  fail = Left
+
+safeZipWithM :: forall m a b c. MonadFail m => (a -> b -> m c) -> [a] -> [b] -> m [c]
+safeZipWithM f xs ys = go xs ys where
+  go :: [a] -> [b] -> m [c]
+  go (x:xs) (y:ys) = do
+    z  <- f  x  y
+    zs <- go xs ys
+    return (z:zs)
+  go []     []     = return []
+  go _      _      = fail "safeZipWithM: incompatible input sizes"
+
+safeZipWith3M :: MonadFail m => (a -> b -> c -> m d) -> [a] -> [b] -> [c] -> m [d]
+safeZipWith3M f xs ys zs = go xs ys zs where
+  go (x:xs) (y:ys) (z:zs) = do
+    w  <- f  x  y  z
+    ws <- go xs ys zs
+    return (w:ws)
+  go []     []     []     = return []
+  go _      _      _      = fail "safeZipWith3M: incompatible input sizes"
+
+safeZipWith4M :: MonadFail m => (a -> b -> c -> d -> m e) -> [a] -> [b] -> [c] -> [d] -> m [e]
+safeZipWith4M f xs ys zs us = go xs ys zs us where
+  go (x:xs) (y:ys) (z:zs) (u:us) = do
+    w  <- f  x  y  z  u 
+    ws <- go xs ys zs us
+    return (w:ws)
+  go []     []     []     []     = return []
+  go _      _      _      _      = fail "safeZipWith4M: incompatible input sizes"
+
+safeZipWithM_ :: MonadFail m => (a -> b -> m c) -> [a] -> [b] -> m () 
+safeZipWithM_ f xs ys = void (safeZipWithM f xs ys)
+
+safeZipWith3M_ :: MonadFail m => (a -> b -> c -> m d) -> [a] -> [b] -> [c] -> m ()
+safeZipWith3M_ f xs ys zs = void (safeZipWith3M f xs ys zs)
+
+safeZipWith4M_ :: MonadFail m => (a -> b -> c -> d -> m e) -> [a] -> [b] -> [c] -> [d] -> m ()
+safeZipWith4M_ f xs ys zs us = void (safeZipWith4M f xs ys zs us)
+
+safeFlippedZipWithM_ :: MonadFail m => [a] -> [b] -> (a -> b -> m c) -> m () 
+safeFlippedZipWithM_ xs ys f = safeZipWithM_ f xs ys
+
+safeFlippedZipWith3M_ :: MonadFail m => [a] -> [b] -> [c] -> (a -> b -> c -> m d) -> m ()
+safeFlippedZipWith3M_ xs ys zs f = safeZipWith3M_ f xs ys zs
+
+safeFlippedZipWith4M_ :: MonadFail m =>[a] -> [b] -> [c] -> [d] -> (a -> b -> c -> d -> m e) -> m ()
+safeFlippedZipWith4M_ xs ys zs us f = safeZipWith4M_ f xs ys zs us
 
 --------------------------------------------------------------------------------
 -- * Arrays
