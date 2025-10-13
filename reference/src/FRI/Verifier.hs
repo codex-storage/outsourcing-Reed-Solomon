@@ -88,7 +88,10 @@ verifyFRI' friVKey@(MkFriVerifierKey{..}) friProof@(MkFriProof{..}) = do
   
   -- compute challenges
   challenges <- lift $ computeFriChallenges vkeyMatrixCap friProof
-  {- duplexPPrint "verifier challenges" challenges -}
+
+  {- 
+  duplexPPrint "verifier challenges" challenges    -- debugging
+  -}
   
   -- check proof-of-work grinding
   unless (checkGrindBits friGrindingBits (friGrindResponse challenges)) $ throwError "grinding challenge didn't pass"
@@ -130,6 +133,7 @@ checkQueryRound vkey@(MkFriVerifierKey{..}) challenges theFriProof iniQueryIdx q
   let MkFriConfig{..} = vkeyFriConfig
   let arities = fromReductionStrategy friReductionStrategy 
 
+  -- setup for the folding consistency checks
   let steps = 
         [ MkStepInfo
             { stepArity      = arity
@@ -158,21 +162,23 @@ checkQueryRound vkey@(MkFriVerifierKey{..}) challenges theFriProof iniQueryIdx q
         , stateQueryValue = iniUpstreamValue
         } 
 
+  -- check the folding steps (evaluation Merkle proofs + upstream consistency check)
   finalState <- foldM checkQueryStep initialStepState steps
+
+  -- check final polynomial against the final folded value
   let loc     = stateEvalLocation finalState
   let polyVal = polyEvalAt (proofFinalPoly theFriProof) (inj loc)
   unlessEqual polyVal (stateQueryValue finalState) $ \a b -> 
     "final polynomial evaluation " ++ a ++ " does not match final downstream value " ++ b 
 
-  -- fail "checkQueryRound: not yet fully implemented"
   return ()
 
 --------------------------------------------------------------------------------
 
 -- | Note: treeSize + cosetSize = vector size (because the tree is over the cosets)
 data TreeCfg = MkTreeCfg
-  { _treeSize  :: Log2     -- ^ log size of the tree (whose leafs are cosets)
-  , _cosetSize :: Log2     -- ^ size of the cosets
+  { _treeSize  :: Log2        -- ^ log size of the tree (whose leafs are cosets)
+  , _cosetSize :: Log2        -- ^ size of the cosets
   }
   deriving (Eq,Show)
 
@@ -229,8 +235,7 @@ stateEvalLocation (MkStepState{..})
   where
     subgroup = getSubgroup stateFullSize
 
--- we use natural indexing
--- upstream coset: { 0 , T , 2T , ... (K-1)T } where T = treeSize (note: K*T = subgroup size) 
+-- | Check a single query step and also do the folding
 checkQueryStep :: StepState -> StepInfo -> ExceptT String IO StepState
 checkQueryStep upstream@(MkStepState{..}) (MkStepInfo{..})  = do
 
@@ -253,15 +258,16 @@ checkQueryStep upstream@(MkStepState{..}) (MkStepInfo{..})  = do
     debugPrint "treePos"        treePos
     debugPrint "evals"          stepEvals
     debugPrint "upstreamValue"  stateQueryValue
-    -- debugPrint "inverseDFT"     inverseDFT
     debugPrint "downtreamValue" downstreamValue
 -}
 
+  -- check the upstream value against the opened coset
   unless (stateQueryValue == stepEvals !! (posCosetOfs treePos)) $ do
     throwError "upstream evaluation value does not match"
 
+  -- check the Merkle proof of the opened coset
   let merkleProof = MkMerkleProof 
-        { _leafIndex   = downstreamIdx        -- "accidentally" this is the same
+        { _leafIndex   = downstreamIdx           -- note: "accidentally" this is the same as the downstream index
         , _leafData    = stepEvals
         , _merklePath  = stepMerklePath
         , _dataSize    = exp2_ (stateFullSize - stepArity)

@@ -13,12 +13,10 @@ See the [docs](../docs/) directory for details.
 ### Improving performance
 
 We could significantly improve the speed of the Haskell implementation by binding C code 
-(from the [`zikkurat-algebra`](https://github.com/faulhornlabs/zikkurat-algebra/) library)
-for some of the critical routines: Goldilocks field and extension, hashing,
-fast Fourier transform.
+for some of the critical routines: Goldilocks field and extension, hashing, fast Fourier 
+transform.
 
 ### References
 
-- E. Ben-Sasson, L. Goldberg, S. Kopparty, and S. Saraf: _"DEEP-FRI: Sam-
-pling outside the box improves soundness"_ - https://ia.cr/2019/336.
-- Ulrich Haböck: _"A summary on the FRI low degree test"_
+- E. Ben-Sasson, L. Goldberg, S. Kopparty, and S. Saraf: _"DEEP-FRI: Sampling outside the box improves soundness"_ - https://eprint.iacr.org/2019/336
+- Ulrich Haböck: _"A summary on the FRI low degree test"_ - https://eprint.iacr.org/2022/1216
