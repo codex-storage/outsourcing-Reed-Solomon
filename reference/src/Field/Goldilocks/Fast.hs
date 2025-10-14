@@ -1,8 +1,8 @@
 
--- | Reference (slow) implementation of the Goldilocks prime field
+-- | Bindings to a C implementation of the Goldilocks prime field
 
-{-# LANGUAGE BangPatterns, NumericUnderscores #-}
-module Field.Goldilocks.Slow where
+{-# LANGUAGE ForeignFunctionInterface, BangPatterns, NumericUnderscores #-}
+module Field.Goldilocks.Fast where
 
 --------------------------------------------------------------------------------
 
@@ -12,6 +12,8 @@ import qualified Prelude
 import Data.Bits
 import Data.Word
 import Data.Ratio
+
+import Foreign.C
 
 import System.Random
 
@@ -26,7 +28,10 @@ import Text.Printf
 type F = Goldilocks
 
 fromF :: F -> Word64
-fromF (MkGoldilocks x) = fromInteger x
+fromF (MkGoldilocks x) = x
+
+unsafeToF :: Word64 -> F
+unsafeToF = MkGoldilocks
 
 toF :: Word64 -> F
 toF = mkGoldilocks . fromIntegral
@@ -41,7 +46,7 @@ instance Binary F where
 --------------------------------------------------------------------------------
 
 newtype Goldilocks 
-  = MkGoldilocks Integer 
+  = MkGoldilocks Word64
   deriving Eq
 
 instance Show Goldilocks where
@@ -74,7 +79,7 @@ instance Fractional Goldilocks where
 
 instance Random Goldilocks where
   -- random :: RandomGen g => g -> (a, g) 
-  random  g = let (x,g') = randomR (0,goldilocksPrime-1) g in (MkGoldilocks x, g')
+  random  g = let (x,g') = randomR (0,goldilocksPrimeWord64-1) g in (MkGoldilocks x, g')
   randomR = error "randomR/Goldilocks: doesn't make much sense"
 
 --------------------------------------------------------------------------------
@@ -83,11 +88,14 @@ instance Random Goldilocks where
 goldilocksPrime :: Integer
 goldilocksPrime = 0x_ffff_ffff_0000_0001
 
+goldilocksPrimeWord64 :: Word64
+goldilocksPrimeWord64 = 0x_ffff_ffff_0000_0001
+
 modp :: Integer -> Integer
 modp a = mod a goldilocksPrime
 
 mkGoldilocks :: Integer -> Goldilocks
-mkGoldilocks = MkGoldilocks . modp
+mkGoldilocks = MkGoldilocks . fromInteger . modp
 
 -- | A fixed generator of the multiplicative subgroup of the field
 theMultiplicativeGenerator :: Goldilocks
@@ -95,31 +103,40 @@ theMultiplicativeGenerator = mkGoldilocks 7
 
 --------------------------------------------------------------------------------
 
+foreign import ccall unsafe "goldilocks_neg" c_goldilocks_neg :: Word64 -> Word64
+foreign import ccall unsafe "goldilocks_add" c_goldilocks_add :: Word64 -> Word64 -> Word64
+foreign import ccall unsafe "goldilocks_sub" c_goldilocks_sub :: Word64 -> Word64 -> Word64
+foreign import ccall unsafe "goldilocks_sqr" c_goldilocks_sqr :: Word64 -> Word64
+foreign import ccall unsafe "goldilocks_mul" c_goldilocks_mul :: Word64 -> Word64 -> Word64
+foreign import ccall unsafe "goldilocks_inv" c_goldilocks_inv :: Word64 -> Word64
+foreign import ccall unsafe "goldilocks_div" c_goldilocks_div :: Word64 -> Word64 -> Word64
+foreign import ccall unsafe "goldilocks_pow" c_goldilocks_pow :: Word64 -> CInt   -> Word64
+
 neg :: Goldilocks -> Goldilocks
-neg (MkGoldilocks k) = mkGoldilocks (negate k) 
+neg (MkGoldilocks k) = MkGoldilocks (c_goldilocks_neg k) 
 
 add :: Goldilocks -> Goldilocks -> Goldilocks
-add (MkGoldilocks a) (MkGoldilocks b) = mkGoldilocks (a+b) 
+add (MkGoldilocks a) (MkGoldilocks b) = MkGoldilocks (c_goldilocks_add a b) 
 
 sub :: Goldilocks -> Goldilocks -> Goldilocks
-sub (MkGoldilocks a) (MkGoldilocks b) = mkGoldilocks (a-b) 
+sub (MkGoldilocks a) (MkGoldilocks b) = MkGoldilocks (c_goldilocks_sub a b) 
 
 sqr :: Goldilocks -> Goldilocks
-sqr x = mul x x
+sqr (MkGoldilocks a)  = MkGoldilocks (c_goldilocks_sqr a) 
 
 mul :: Goldilocks -> Goldilocks -> Goldilocks
-mul (MkGoldilocks a) (MkGoldilocks b) = mkGoldilocks (a*b) 
+mul (MkGoldilocks a) (MkGoldilocks b) = MkGoldilocks (c_goldilocks_mul a b) 
 
 inv :: Goldilocks -> Goldilocks
-inv x = pow x (goldilocksPrime - 2)
+inv (MkGoldilocks a)  = MkGoldilocks (c_goldilocks_inv a) 
 
 div :: Goldilocks -> Goldilocks -> Goldilocks
-div a b = mul a (inv b)
+div (MkGoldilocks a) (MkGoldilocks b) = MkGoldilocks (c_goldilocks_div a b) 
 
 --------------------------------------------------------------------------------
 
 pow_ :: Goldilocks -> Int -> Goldilocks
-pow_ x e = pow x (fromIntegral e)
+pow_ (MkGoldilocks x) e = MkGoldilocks $ c_goldilocks_pow x (fromIntegral e :: CInt)
 
 pow :: Goldilocks -> Integer -> Goldilocks
 pow x e 

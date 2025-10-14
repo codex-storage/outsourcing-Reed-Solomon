@@ -17,6 +17,7 @@ import System.Random
 import Data.Binary
 
 import Field.Goldilocks ( F )
+import qualified Field.Goldilocks as Goldi
 
 --------------------------------------------------------------------------------
 
@@ -55,6 +56,17 @@ instance Random F2 where
                   (y,g'') = random g'
               in  (F2 x y, g'')
   randomR = error "randomR/F2: doesn't make any sense"
+
+--------------------------------------------------------------------------------
+
+zero, one, two :: F2
+zero = F2 Goldi.zero Goldi.zero 
+one  = F2 Goldi.one  Goldi.zero 
+two  = F2 Goldi.two  Goldi.zero 
+
+isZero, isOne :: F2 -> Bool
+isZero (F2 r i) = Goldi.isZero r && Goldi.isZero i
+isOne  (F2 r i) = Goldi.isOne  r && Goldi.isZero i
 
 --------------------------------------------------------------------------------
 
