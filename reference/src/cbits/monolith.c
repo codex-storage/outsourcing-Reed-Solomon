@@ -1,5 +1,6 @@
 
 #include <assert.h>
+#include <string.h>
 
 #include "goldilocks.h"
 #include "monolith.h"
@@ -139,6 +140,11 @@ void goldilocks_monolith_permutation(uint64_t *state) {
   goldilocks_monolith_bars    (state);
   goldilocks_monolith_bricks  (state);
   goldilocks_monolith_concrete(state);
+}
+
+void goldilocks_monolith_permutation_into(uint64_t *src, uint64_t *tgt) {
+  memcpy( tgt , src , 12*8 );
+  goldilocks_monolith_permutation( tgt );
 }
 
 //------------------------------------------------------------------------------

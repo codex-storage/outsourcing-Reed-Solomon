@@ -31,7 +31,9 @@ import Data.Word
 import Data.List
 
 import Field.Goldilocks
+
 import Hash.Permutations
+import Hash.State
 import Hash.Common
 
 --------------------------------------------------------------------------------
@@ -69,7 +71,7 @@ hashFieldElems' which rate@(Rate r) fels
 --
 internalSponge :: Hash -> Int -> Rate -> [[F]] -> Digest
 internalSponge which nbits (Rate r) blocks = extractDigest (loop blocks iv) where
-  iv     = listArray (0,11) $ [ 0,0,0,0 , 0,0,0,0 , domSep,0,0,0 ] :: State
+  iv     = listToState' 12 $ [ 0,0,0,0 , 0,0,0,0 , domSep,0,0,0 ] :: State
   domSep = fromIntegral (65536*nbits + 256*t + r) :: F
   t      = 12
 
@@ -80,9 +82,6 @@ internalSponge which nbits (Rate r) blocks = extractDigest (loop blocks iv) wher
   loop list state = case list of
     (this:rest) -> loop rest (step this state)
     []          -> state
-
-addToState :: [F] -> State -> State
-addToState xs arr = listArray (0,11) $ zipWith (+) (xs ++ repeat 0) (elems arr)
 
 --------------------------------------------------------------------------------
 

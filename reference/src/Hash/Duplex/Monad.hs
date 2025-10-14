@@ -16,7 +16,9 @@ import Control.Monad.IO.Class
 import Text.Show.Pretty
 
 import Field.Goldilocks
+
 import Hash.Common
+import Hash.State
 import Hash.Duplex.Pure ( DuplexState, Squeeze, Absorb , theHashFunction )
 import qualified Hash.Duplex.Pure as Pure
 

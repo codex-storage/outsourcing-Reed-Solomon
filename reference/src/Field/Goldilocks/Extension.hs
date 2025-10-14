@@ -14,6 +14,9 @@ import Data.Ratio
 
 import System.Random
 
+import Foreign.Ptr
+import Foreign.Storable
+
 import Data.Binary
 
 import Field.Goldilocks ( F )
@@ -56,6 +59,17 @@ instance Random F2 where
                   (y,g'') = random g'
               in  (F2 x y, g'')
   randomR = error "randomR/F2: doesn't make any sense"
+
+instance Storable F2 where
+  peek ptr = do
+    r <- peek (castPtr ptr) 
+    i <- peek (castPtr ptr `plusPtr` 8)
+    return (F2 r i)
+  poke ptr (F2 r i) = do
+    poke (castPtr ptr)             r
+    poke (castPtr ptr `plusPtr` 8) i
+  sizeOf    _ = 16
+  alignment _ = 8
 
 --------------------------------------------------------------------------------
 

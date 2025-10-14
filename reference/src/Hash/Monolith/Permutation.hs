@@ -12,6 +12,8 @@ import Data.Bits
 import Data.Word
 
 import Field.Goldilocks
+
+import Hash.State.Naive
 import Hash.Monolith.Constants
 import Hash.Common
 

@@ -34,22 +34,6 @@ hashRate hash = case hash of
 
 --------------------------------------------------------------------------------
 
-type State = Array Int F
-
-listToState' :: Int -> [F] -> State
-listToState' n = listArray (0,n-1)
-
-listToState :: Hash -> [F] -> State
-listToState hash = listToState' (hashT hash)
-
-zeroState' :: Int -> State
-zeroState' n = listToState' n (replicate n 0)
-
-zeroState :: Hash -> State
-zeroState hash = zeroState' (hashT hash)
-
---------------------------------------------------------------------------------
-
 data Digest 
   = MkDigest !F !F !F !F
   deriving (Eq,Show)
@@ -63,10 +47,6 @@ instance FieldEncode Digest where
   
 zeroDigest :: Digest
 zeroDigest = MkDigest 0 0 0 0
-
-extractDigest :: State -> Digest
-extractDigest state = case elems state of 
-  (a:b:c:d:_) -> MkDigest a b c d
 
 listToDigest :: [F] -> Digest
 listToDigest [a,b,c,d] = MkDigest a b c d

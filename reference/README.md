@@ -16,6 +16,19 @@ We could significantly improve the speed of the Haskell implementation by bindin
 for some of the critical routines: Goldilocks field and extension, hashing, fast Fourier 
 transform.
 
+### Implementation status
+
+- [x] FRI prover
+- [x] FRI verifier
+- [ ] proof serialization
+- [ ] serious testing of the FRI verifier
+- [ ] full outsourcing protocol
+- [ ] command line interface
+- [x] faster Goldilocks field operations via C FFI
+- [ ] quadratic field extension in C too
+- [ ] faster hashing via C FFI
+- [ ] faster NTT via C FFI
+
 ### References
 
 - E. Ben-Sasson, L. Goldberg, S. Kopparty, and S. Saraf: _"DEEP-FRI: Sampling outside the box improves soundness"_ - https://eprint.iacr.org/2019/336

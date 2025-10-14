@@ -18,7 +18,9 @@ import Data.Array
 
 import Field.Goldilocks           ( F )
 import Field.Goldilocks.Extension ( FExt , F2(..) )
+
 import Hash.Permutations
+import Hash.State
 import Hash.Common
 
 --------------------------------------------------------------------------------
@@ -37,14 +39,11 @@ data DuplexState
 duplexInitialState :: State -> DuplexState
 duplexInitialState state = Absorbing state [] 
 
-overwrite :: [F] -> State -> State
-overwrite new old = listToState theHashFunction $ new ++ drop (length new) (elems old)
-
 duplex :: [F] -> State -> State
 duplex inp old = permute theHashFunction (overwrite inp old)
 
 extract :: State -> [F]
-extract state = reverse $ take rate (elems state) where 
+extract state = reverse $ take rate (stateToList state) where 
   rate = 8
 
 freshSqueezing :: State -> DuplexState

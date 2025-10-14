@@ -33,6 +33,7 @@ import Field.Encode
 
 import Hash.Permutations
 import Hash.Common
+import Hash.State
 import Hash.Sponge
 
 import Misc
@@ -262,13 +263,13 @@ reconstructMerkleRoot (MkMerkleProof idx leaf (MkRawMerklePath path) size) = dig
 
 compress :: Hash -> Digest -> Digest -> Digest
 compress which (MkDigest a b c d) (MkDigest p q r s) = extractDigest output where
-  input  = listArray (0,11) [ a,b,c,d , p,q,r,s , 0,0,0,0 ]
+  input  = listToState' 12 [ a,b,c,d , p,q,r,s , 0,0,0,0 ]
   output = permute which input
 
 keyedCompress ::  Hash -> Key -> Digest -> Digest -> Digest
 keyedCompress which key (MkDigest a b c d) (MkDigest p q r s) = extractDigest output where
   k = fromIntegral key :: F
-  input  = listArray (0,11) [ a,b,c,d , p,q,r,s , k,0,0,0 ]
+  input  = listToState' 12 [ a,b,c,d , p,q,r,s , k,0,0,0 ]
   output = permute which input
 
 --------------------------------------------------------------------------------

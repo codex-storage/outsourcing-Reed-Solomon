@@ -14,6 +14,8 @@ import Data.Word
 import Data.Ratio
 
 import Foreign.C
+import Foreign.Ptr
+import Foreign.Storable
 
 import System.Random
 
@@ -42,6 +44,12 @@ intToF = mkGoldilocks . fromIntegral
 instance Binary F where
   put x = putWord64le (fromF x)
   get = toF <$> getWord64le
+
+instance Storable F where
+  peek ptr                   = MkGoldilocks <$> peek (castPtr ptr)
+  poke ptr  (MkGoldilocks x) = poke (castPtr ptr) x
+  sizeOf    _ = 8
+  alignment _ = 8
 
 --------------------------------------------------------------------------------
 
