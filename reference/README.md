@@ -20,13 +20,13 @@ transform.
 
 - [x] FRI prover
 - [x] FRI verifier
-- [ ] proof serialization
+- [x] proof serialization
 - [ ] serious testing of the FRI verifier
 - [ ] full outsourcing protocol
 - [ ] command line interface
 - [x] faster Goldilocks field operations via C FFI
 - [ ] quadratic field extension in C too
-- [ ] faster hashing via C FFI
+- [x] faster hashing via C FFI
 - [ ] faster NTT via C FFI
 
 ### References
