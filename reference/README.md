@@ -16,18 +16,26 @@ We could significantly improve the speed of the Haskell implementation by bindin
 for some of the critical routines: Goldilocks field and extension, hashing, fast Fourier 
 transform.
 
+The switch between the simple but intentionally naive (and very slow) Haskell 
+implementation and the significantly faster C bindings is controlled by by the 
+C preprocessor flag `-DUSE_NAIVE_HASKELL` (so the faster one is the default).
+
 ### Implementation status
 
+- [ ] cabalize
 - [x] FRI prover
 - [x] FRI verifier
 - [x] proof serialization
 - [ ] serious testing of the FRI verifier
 - [ ] full outsourcing protocol
-- [ ] command line interface
 - [x] faster Goldilocks field operations via C FFI
-- [ ] quadratic field extension in C too
+- [x] quadratic field extension in C too (useful for the folding prover?)
 - [x] faster hashing via C FFI
 - [ ] faster NTT via C FFI
+- [ ] disk layout optimization
+- [ ] end-to-end workflow with input/output data in files
+- [ ] command line interface
+- [ ] even more detailed documentation of the protocol
 
 ### References
 

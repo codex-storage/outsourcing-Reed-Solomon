@@ -1,4 +1,6 @@
 
+// the "Goldilocks" prime field of size `p = 2^64 - 2^32 + 1`
+
 #include <stdint.h>
 
 //------------------------------------------------------------------------------
@@ -18,6 +20,11 @@ uint64_t goldilocks_mul_small(uint64_t x, uint32_t y);
 uint64_t goldilocks_inv(uint64_t a);
 uint64_t goldilocks_div(uint64_t a, uint64_t b);
 uint64_t goldilocks_pow(uint64_t b, int e);
+
+uint64_t goldilocks_mul_by_2  (uint64_t x);
+uint64_t goldilocks_div_by_2  (uint64_t a);
+uint64_t goldilocks_a_plus_7b (uint64_t a, uint64_t b);
+uint64_t goldilocks_a_minus_7b(uint64_t a, uint64_t b);
 
 //------------------------------------------------------------------------------
 

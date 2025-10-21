@@ -13,6 +13,10 @@ import Data.Bits
 import Data.Word
 import Data.Ratio
 
+import Foreign.Ptr
+import Foreign.Storable
+import Foreign.Marshal
+
 import System.Random
 
 import Data.Binary
@@ -20,6 +24,8 @@ import Data.Binary.Get ( getWord64le )
 import Data.Binary.Put ( putWord64le )
 
 import Text.Printf
+
+import Data.Flat
 
 --------------------------------------------------------------------------------
 
@@ -34,9 +40,23 @@ toF = mkGoldilocks . fromIntegral
 intToF :: Int -> F
 intToF = mkGoldilocks . fromIntegral
 
+--------------------------------------------------------------------------------
+
 instance Binary F where
   put x = putWord64le (fromF x)
   get = toF <$> getWord64le
+
+instance Storable F where
+  peek ptr                   = (MkGoldilocks . fromIntegral) <$> peek (castPtr ptr :: Ptr Word64)
+  poke ptr  (MkGoldilocks x) = poke (castPtr ptr :: Ptr Word64) (fromInteger x :: Word64)
+  sizeOf    _ = 8
+  alignment _ = 8
+
+instance Flat Goldilocks where
+  sizeInBytes  _ = 8
+  sizeInQWords _ = 1
+  withFlat (MkGoldilocks x) action = alloca $ \ptr -> poke ptr (fromInteger x :: Word64) >> action ptr
+  makeFlat ptr = (MkGoldilocks . fromIntegral) <$> peek ptr
 
 --------------------------------------------------------------------------------
 

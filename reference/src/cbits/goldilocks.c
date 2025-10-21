@@ -1,4 +1,6 @@
 
+// the "Goldilocks" prime field of size `p = 2^64 - 2^32 + 1`
+
 #include <stdint.h>
 #include <stdio.h>      // for testing only
 #include <assert.h>
@@ -126,6 +128,22 @@ uint64_t goldilocks_mul_small(uint64_t x, uint32_t y) {
 
 //------------------------------------------------------------------------------
 
+uint64_t goldilocks_mul_by_2(uint64_t x) {
+  return goldilocks_add( x , x ); 
+}
+
+uint64_t goldilocks_a_plus_7b(uint64_t a, uint64_t b) {
+  __uint128_t z = (__uint128_t)a + 7 * (__uint128_t)b ;
+  return goldilocks_rdc_small( z );
+}
+
+uint64_t goldilocks_a_minus_7b(uint64_t a, uint64_t b) {
+  uint64_t b7 = goldilocks_rdc_small ( 7 * (__uint128_t)b ) ;
+  return goldilocks_sub( a , b7 );
+}
+
+//------------------------------------------------------------------------------
+
 uint64_t goldilocks_euclid(uint64_t x0, uint64_t y0, uint64_t u0, uint64_t v0) {
 
   uint64_t x = x0;
@@ -178,6 +196,15 @@ uint64_t goldilocks_inv(uint64_t a) {
   return goldilocks_div(1, a);
 }
 
+uint64_t goldilocks_div_by_2(uint64_t a) {
+  if (a & 1) {
+    return ((a >> 1) + GOLDILOCKS_HALFPRIME_PLUS1);
+  }
+  else {
+    return (a >> 1);
+  }
+}
+
 //------------------------------------------------------------------------------
 
 uint64_t goldilocks_pow(uint64_t base, int expo) {
@@ -193,7 +220,7 @@ uint64_t goldilocks_pow(uint64_t base, int expo) {
       acc = goldilocks_mul( acc, sq );
     } 
     if (e > 0) {
-      sq = goldilocks_mul( sq , sq );
+      sq = goldilocks_sqr( sq );
       e  = e >> 1;
     }
   }

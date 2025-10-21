@@ -16,6 +16,7 @@ import Data.Ratio
 import Foreign.C
 import Foreign.Ptr
 import Foreign.Storable
+import Foreign.Marshal
 
 import System.Random
 
@@ -24,6 +25,8 @@ import Data.Binary.Get ( getWord64le )
 import Data.Binary.Put ( putWord64le )
 
 import Text.Printf
+
+import Data.Flat
 
 --------------------------------------------------------------------------------
 
@@ -50,6 +53,12 @@ instance Storable F where
   poke ptr  (MkGoldilocks x) = poke (castPtr ptr) x
   sizeOf    _ = 8
   alignment _ = 8
+
+instance Flat Goldilocks where
+  sizeInBytes  _ = 8
+  sizeInQWords _ = 1
+  withFlat (MkGoldilocks x) action = alloca $ \ptr -> poke ptr x >> action ptr
+  makeFlat ptr = MkGoldilocks <$> peek ptr
 
 --------------------------------------------------------------------------------
 
