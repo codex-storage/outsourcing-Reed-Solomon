@@ -152,7 +152,20 @@ NR-1\, \}
 
 where $R=2^r=1/\rho$ is the expansion ratio.
 
-Note: using $r>1$ (so $R>2$ or $\rho<1/2$) in the FRI protocol may make sense even if we only keep a smaller amount of the parity data at the end (to limit the storage overhead), as it may improve soundness or decrease proof size (while also making the proof time longer).
+But then this needs to be re-indexed so that $\mathsf{data}$, $\mathsf{parity_1}$ etc become subtrees. This can be calculated as follows:
+
+\begin{align*}
+\mathsf{idx_Merkle}  &= 
+  \left\lfloor \frac{\mathsf{idx_natural}}{R}
+    \right\rfloor + N\,\times\, \textrm{mod}
+      \big(\mathsf{idx_natural}\,,\,R\big) \\
+\mathsf{idx_natural} &=
+  \left\lfloor \frac{\mathsf{idx_Merkle}}{N}
+    \right\rfloor + R\,\times\, 
+      \textrm{mod}\big(\mathsf{idx_Merkle}\,,\,N\big) \\
+\end{align*}
+
+Note: using $r>1$ (so $R>2$ or $\rho<1/2$) in the FRI protocol may make sense even if we only keep a smaller amount of the parity data at the end (to limit the storage overhead), as it may improve soundness or decrease proof size (while also making the proof time longer). **WARNING:** This may have non-trivial security implications?
 
 #### Commit phase vectors ordering
 

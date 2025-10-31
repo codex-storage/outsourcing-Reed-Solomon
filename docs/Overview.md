@@ -5,13 +5,15 @@ The purpose of local erasure coding (we used to call this "slot-level EC" in old
 
 The core principle behind this idea is the distance amplification property of Reed-Solomon codes.
 
-The concept is simple: If we encode $K$ data symbols into $N$ code symbols, then for the data to be irrecoverably lost, you need to lose at least $N-K+1$ symbols (it's a bit more complicated with data corruption, but let's ignore that for now). In a typical case of $N=2K$, this means that checking just one randomly chosen symbol gives you approximately $p\approx 1/2$ probability of detecting data loss.
+The concept is simple: If we encode $K$ data symbols into $N>K$ code symbols, then for the data to be irrecoverably lost, you need to lose at least $N-K+1$ symbols (it's a bit more complicated with data corruption, but let's ignore that for now). In a typical case of $N=2K$, this means that checking just one randomly chosen symbol gives you approximately $p\approx 1/2$ probability of detecting _data loss_.
+
+Technical remark: Obviously the (encoded) data can be still corrupted. The idea here is that even if there is corruption or loss, in theory the provider _could_ reconstruct the original data _if they wanted_, hence the _data itself_ is in principle not lost.
 
 ### Outsourcing to the provider
 
 In "old Codex", this encoding (together with the network-level erasure coding) was done by the client before uploading. 
 
-However, it would be preferable to outsource the local encoding to the providers, for several reasons:
+However, it would preferable to outsource the local encoding to the providers, for several reasons:
 
 - the providers typically have more computational resources than the clients (especially if the client is for example a mobile phone)
 - because the network chunks are hold by different providers, the work could be distributed among several providers, further decreasing the per-person work
@@ -33,7 +35,7 @@ The FRI protocol (short for "Fast Reed-Solomon Interactive Oracle Proofs of Prox
 
 Note that obviously we cannot do better than "close to" without checking every single element of the vector (which again obviously wouldn't be a useful approach), so "close to" must be an acceptable compromise.
 
-However, in the ideal situation, if the precise distance bound $\delta$ of the "close to" concept is small enough, then there is exactly 1 codeword within that radius ("unique decoding regime"). In that situation errors in the codeword can be corrected simply by replacing it with the closest codeword. A somewhat more complicated situation is the so-called "list decoding regime".
+However, in the ideal situation, if the precise distance bound $\delta$ of the "close to" concept is small enough, then there is exactly 1 codeword within that radius ("unique decoding regime"). In that situation errors in the codeword can be corrected simply by replacing it with the closest codeword. A somewhat more complicated situation is the so-called "list decoding regime". For more details see the accompanying document about security/soundness.
 
 As usual we can make this non-interactive via the Fiat-Shamir heuristic.
 
@@ -46,23 +48,23 @@ This gives us a relatively simple plan of attack:
 - the provider also distributes the Merkle root of the parity data together with the FRI proof. This is the proof (a singleton Merkle path) connecting the original data Merkle root and the codeword Merkle root (storage proofs will be validated against the latter)
 - the metadata is updated: the new content ID will be Merkle root of the codeword, against which storage proofs will be required in the future. Of course one will also need a mapping from the original content ID(s) to the new locations (root + pointer(s) inside the RS encoded data)
 
-Remark: If the 2x storage overhead is too big, after executing the protocol, we may try to trim some of the parity (say 50% of it). You can probably still prove some new Merkle root with a little bit of care, but non-power-of-two sizes make everything more complicated.
+Remark: If the 2x storage overhead is too big, after executing the protocol, we may try to trim some of the parity (say 50% of it). You can probably still prove some new Merkle root with a little bit of care, but non-power-of-two sizes make everything more complicated. WARNING: This "truncation" may have serious implication on the security of the whole protocol!!
 
-Remark #2: There are also improved versions of the FRI protocol like STIR and WHIR. I believe those can be used in the same way. But as FRI is already rather complicated, for now let's concentrate on that.
+Remark #2: There are also improved versions of the FRI protocol like STIR and WHIR. I believe those can be used in the same way. But as FRI is already rather complicated, for now let's just concentrate on that.
 
 ### Batching
 
 FRI is a relatively expensive protocol. I expect this proposal to work well for say up to 1 GB data sizes, and acceptably up to 10 GB of data. But directly executing FRI on such data sizes would be presumably very expensive.
 
-Fortunately, FRI can be batched, in a very simple way: Suppose you want to prove that $M$ vectors $v_i\in \mathbb{F}^N$ are all codewords. To do that, just consider a random linear combination (recall that Reed-Solomon is a linear code)
+Fortunately, FRI can be batched, in a very simple way: Suppose you want to prove that $M$ vectors $v_i\in \mathbb{F}^N$ (for $0\le i <M$) are all codewords. To do that, just consider the random linear combination (recall that Reed-Solomon is a linear code):
  
 $$ V := \sum_{i=1}^M \alpha^i v_i $$
 
-with a randomly chosen $0\neq\alpha\in\mathbb{F}$ (choosen by the verifier or via Fiat-Shamir). Intuitively, it's very unlikely that any of $v_i$ is _not a codeword_ but $V$ is (this can be quantified precisely). So it's enough to run the FRI on the combined vector $V$.
+with a randomly chosen $0\neq\alpha\in\mathbb{F}$ (choosen by the verifier or via Fiat-Shamir). Intuitively, it's very unlikely that any of $v_i$ is _not a codeword_ but $V$ is (this can be quantified precisely). So it's enough to run the FRI protocol on the combined vector $V$.
 
 Note: If the field is not big enough, you may need to either repeat this with several different $\alpha$-s, or consider a field extension. This is the case for example with the Goldilocks field, which has size $|\mathbb{F}|\approx 2^{64}$. Plonky2 for example choses $\alpha\in\widetilde{\mathbb{F}}$ from a degree two field extension $\widetilde{\mathbb{F}}$ (so approx. 128 bits), which is big enough for any practical purposes. FRI is then executed in that bigger field.
 
-This approach has another nice consequences: Now instead of doing one big RS encoding, we have to do many smaller ones. This is good, because:
+This batching approach has another nice consequence: Now instead of doing one big RS encoding, we have to do many smaller ones. This is good, because:
 
 - that's always faster (because of the $O(N\log(N))$ scaling of FFT)
 - it needs much less memory
@@ -76,7 +78,7 @@ We need to choose a prime field (but see below) for the Reed-Solomon encoding, a
 
 Just for executing the FRI protocol, the hash function could be any (cryptographic) hash, and we could even use different hash functions for constructing the row hashes and the Merkle tree. However, if in the future we want to do recursive proof aggregation, then since in that situation the Merkle path proofs need to be to be calculated inside ZK too, it's better to choose a ZK-friendly hash.
 
-With these in mind, a reasonable choice seems to be the Goldilocks field ($p=2^{64}-2^{32}+1$) and the Monolith hash function (which is one of the fastest ZK-friendly hashes). This way the Reed-Solomon encoding and the hash function use a compatible structure.
+With these in mind, a reasonable choice seems to be the Goldilocks field ($p=2^{64}-2^{32}+1$) and the Monolith hash function (which is one of the fastest ZK-friendly hashes). This way the Reed-Solomon encoding and the hash function uses a compatible structure.
 
 Remark: While in principle both FFT and FRI should work with a binary field instead of a prime field (see eg. FRI-Binius), I'm not at all familiar with those variations, so let's leave that for future work. Also, if we want to do recursive proof aggregation, again using prime fields for such proof systems is more common (but again, in principle that should be possible too with a binary field).
 
@@ -84,19 +86,19 @@ Remark: While in principle both FFT and FRI should work with a binary field inst
 
 So the basic idea is to organize the data into a $2^n\times M$ matrix of field elements.
 
-Then extend each column via a rate $\rho=1/2$ Reed-Solomon code to a matrix of size $2^{n+1}\times M$, so that top half is the original data, and the bottom half is parity.
+Then extend each column via a rate $\rho=1/2\,$ Reed-Solomon code to a matrix of size $2^{n+1}\times M$, so that top half is the original data, and the bottom half is parity.
 
 Then hash each row, and build a Merkle tree on the top of the row hashes (this is the structure we need for the batched FRI argument).
 
 #### Row hashes
 
-However, we have a lot of freedom on how to construct the row hashes. The simplest is of course just a linear (sequential) hash. This is efficient (linear sponge hash with $t=12$ should be faster than building a Merkle tree, as you can consume 8 field elements with a single permutation call, instead of an average 4 with a binary Merkle tree); however a disadvantage is that a Merkle path proof needs to include a whole row, which can be potentially a large amount of data if $M$ is big.
+However, we have a lot of freedom on how to construct the row hashes. The simplest is of course just a linear (sequential) hash. This is efficient (linear sponge hash with $t=12$ should be faster than building a Merkle tree, as you can consume 8 field elements with a single permutation call, instead of an average 4 with a binary Merkle tree); however a disadvantage is that a Merkle path proof (when doing random sampling for storage proofs) needs to include a whole row, which can be potentially a large amount of data if $M$ is big.
 
 The other end of the spectrum is to use a Merkle tree over the rows too. Then the Merkle path is really only a Merkle path. However, to make this reasonably simple, we need $M$ to be a power-of-two.
 
 We can also go anywhere inbetween: Split the row into say 8, 16 or 32 chunks; hash those individually; and build a tiny Merkle tree (of depth 3, 4 or 5, respectively) on the top of them. The Merkle root of this small tree will be the row hash. This looks like a nice compromise with the good properties of both extreme cases, while also keeping the Merkle trees complete binary trees (that is, power-of-two number of leaves).
 
-A problem though with this approach is that a single Merkle path doesn't really "proves" the full file, except when you also include the full row data. Which can be much bigger than the Merkle path itself...
+A **problem** though with this approach is that a single Merkle path doesn't really "proves" the full file, except when you also include the full row data. Which can be much bigger than the Merkle path itself... This is because if each column is Reed-Solomon encoded independently, then you have to prove all of them independently...
 
 So maybe actually including full rows is the right approach, and we just have to accept larger proofs (eg. with 2048 byte rows and a 16GB dataset, we have a Merkle tree of depth 23, that is, a Merkle proof is 736 bytes + the 2048 bytes row data is 2784 bytes proof per sample).
 
@@ -128,10 +130,12 @@ Another subtle issue is how to order this data on the disk. Unfortunately spinni
 What are our typical access patterns?
 
 - to do the FFT encoding, we need to access all the columns, independently (and then they will be processed in parallel)
-- to do the query phase of the FRI protocol, we need to access some randomly selected rows (maybe 50--100 of them), and also the full dataset in a form of the "combined polynomial"
+- to do the query phase of the FRI protocol, we need to access some randomly selected rows (maybe 50--100 of them)
 - when doing the randomly sampled "storage proofs" (which is supposed to happen periodically!), again we need to access random rows
 
 Accessing both rows and columns efficiently is pretty much contradictory to each other...
+
+(See also the separate "disk layout" document here!)
 
 Maybe a compromise could be something like a "cache-oblivious" layout on disk, for example, partitition the matrix into medium-sized squares, so that both rows and columns are somewhat painful, but neither of them too much painful.
 
