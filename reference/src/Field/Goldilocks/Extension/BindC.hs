@@ -5,7 +5,7 @@
 -- with the fast Goldilocks base field operations, but the C versions should be useful 
 -- for the vector operations, and this way we can test them easily.
 
-{-# LANGUAGE ForeignFunctionInterface, BangPatterns, NumericUnderscores #-}
+{-# LANGUAGE ForeignFunctionInterface, BangPatterns, NumericUnderscores, TypeFamilies #-}
 module Field.Goldilocks.Extension.BindC where
 
 --------------------------------------------------------------------------------
@@ -31,10 +31,11 @@ import Data.Binary.Put ( putWord64le )
 
 import Text.Printf
 
-import Field.Goldilocks ( F , Goldilocks(..) )
-import qualified Field.Goldilocks as Goldi
+import Field.Goldilocks.Fast ( F , Goldilocks(..) )
+import qualified Field.Goldilocks.Fast as Goldi
 
 import Data.Flat
+import Class.Field
 
 --------------------------------------------------------------------------------
 
@@ -102,6 +103,29 @@ instance Random F2 where
                   (y,g'') = random g'
               in  (F2 x y, g'')
   randomR = error "randomR/F2: doesn't make any sense"
+
+instance Ring FExt where
+  zero        = Field.Goldilocks.Extension.BindC.zero
+  one         = Field.Goldilocks.Extension.BindC.one
+  isZero      = Field.Goldilocks.Extension.BindC.isZero
+  isOne       = Field.Goldilocks.Extension.BindC.isOne
+  square      = Field.Goldilocks.Extension.BindC.sqr
+  power       = Field.Goldilocks.Extension.BindC.pow
+  power_      = Field.Goldilocks.Extension.BindC.pow_
+
+instance Field FExt
+
+instance FiniteField FExt where
+  fieldSize _ = (Goldi.goldilocksPrime ^ 2)
+  rndIO       = randomIO
+
+instance QuadraticExt FExt where
+  type BaseField FExt = Goldi.F
+  inject          = Field.Goldilocks.Extension.BindC.inj
+  project         = Field.Goldilocks.Extension.BindC.proj
+  scale           = Field.Goldilocks.Extension.BindC.scl
+  quadraticPack   = Field.Goldilocks.Extension.BindC.pack
+  quadraticUnpack = Field.Goldilocks.Extension.BindC.unpack
 
 --------------------------------------------------------------------------------
 

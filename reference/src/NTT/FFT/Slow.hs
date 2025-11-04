@@ -26,6 +26,15 @@ polyInterpolate :: Subgroup F -> Array Int F -> Poly F
 polyInterpolate = subgroupINTT
 
 --------------------------------------------------------------------------------
+-- compatible names
+
+forwardNTT :: Subgroup F -> Poly F -> Array Int F
+forwardNTT = subgroupNTT
+
+inverseNTT :: Subgroup F -> Array Int F -> Poly F
+inverseNTT = subgroupINTT
+
+--------------------------------------------------------------------------------
 
 -- | Evaluates a polynomial on a subgroup /of the same size/
 subgroupNTT :: Subgroup F -> Poly F -> Array Int F

@@ -27,6 +27,7 @@ import Data.Binary.Put ( putWord64le )
 import Text.Printf
 
 import Data.Flat
+import Class.Field 
 
 --------------------------------------------------------------------------------
 
@@ -98,6 +99,21 @@ instance Random Goldilocks where
   -- random :: RandomGen g => g -> (a, g) 
   random  g = let (x,g') = randomR (0,goldilocksPrimeWord64-1) g in (MkGoldilocks x, g')
   randomR = error "randomR/Goldilocks: doesn't make much sense"
+
+instance Ring F where
+  zero        = Field.Goldilocks.Fast.zero
+  one         = Field.Goldilocks.Fast.one
+  isZero      = Field.Goldilocks.Fast.isZero
+  isOne       = Field.Goldilocks.Fast.isOne
+  square      = Field.Goldilocks.Fast.sqr
+  power       = Field.Goldilocks.Fast.pow
+  power_      = Field.Goldilocks.Fast.pow_
+
+instance Field F 
+
+instance FiniteField F where
+  fieldSize _ = Field.Goldilocks.Fast.goldilocksPrime
+  rndIO       = randomIO
 
 --------------------------------------------------------------------------------
 

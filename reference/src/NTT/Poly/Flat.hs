@@ -20,8 +20,8 @@ import Foreign.ForeignPtr
 import System.Random
 import System.IO.Unsafe
 
+import Class.Field
 import NTT.Subgroup
-import Field.Class
 import Data.Flat as L
 
 --------------------------------------------------------------------------------

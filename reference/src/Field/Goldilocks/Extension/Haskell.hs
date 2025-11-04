@@ -3,6 +3,7 @@
 --
 -- We use the irreducble polynomial @x^2 - 7@ to be compatible with Plonky3
 
+{-# LANGUAGE TypeFamilies #-}
 module Field.Goldilocks.Extension.Haskell where
 
 --------------------------------------------------------------------------------
@@ -20,10 +21,11 @@ import Foreign.Marshal
 
 import Data.Binary
 
-import Data.Flat
+import Field.Goldilocks.Slow ( F )
+import qualified Field.Goldilocks.Slow as Goldi
 
-import Field.Goldilocks ( F )
-import qualified Field.Goldilocks as Goldi
+import Data.Flat
+import Class.Field
 
 --------------------------------------------------------------------------------
 
@@ -91,6 +93,29 @@ instance Random F2 where
                   (y,g'') = random g'
               in  (F2 x y, g'')
   randomR = error "randomR/F2: doesn't make any sense"
+
+instance Ring FExt where
+  zero        = Field.Goldilocks.Extension.Haskell.zero
+  one         = Field.Goldilocks.Extension.Haskell.one
+  isZero      = Field.Goldilocks.Extension.Haskell.isZero
+  isOne       = Field.Goldilocks.Extension.Haskell.isOne
+  square      = Field.Goldilocks.Extension.Haskell.sqr
+  power       = Field.Goldilocks.Extension.Haskell.pow
+  power_      = Field.Goldilocks.Extension.Haskell.pow_
+
+instance Field FExt 
+
+instance FiniteField FExt where
+  fieldSize _ = (Goldi.goldilocksPrime ^ 2)
+  rndIO       = randomIO
+
+instance QuadraticExt FExt where
+  type BaseField FExt = Goldi.F
+  inject          = Field.Goldilocks.Extension.Haskell.inj
+  project         = Field.Goldilocks.Extension.Haskell.proj
+  scale           = Field.Goldilocks.Extension.Haskell.scl
+  quadraticPack   = Field.Goldilocks.Extension.Haskell.pack
+  quadraticUnpack = Field.Goldilocks.Extension.Haskell.unpack
 
 --------------------------------------------------------------------------------
 

@@ -32,6 +32,9 @@ newtype Poly a
   = Poly (Array Int a) 
   deriving (Show,Functor)
 
+fromPoly :: Poly a -> Array Int a
+fromPoly (Poly arr) = arr
+
 instance Binary a => Binary (Poly a) where
   put (Poly arr) = putSmallArray arr
   get = Poly <$> getSmallArray

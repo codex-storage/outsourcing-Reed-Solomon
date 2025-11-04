@@ -8,7 +8,7 @@ import Control.Monad
 import Data.Proxy
 import Data.IORef
 
-import Field.Class
+import Class.Field
 import Field.Properties
 
 import Field.Goldilocks           ( F    )

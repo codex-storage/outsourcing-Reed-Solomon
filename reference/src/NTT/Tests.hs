@@ -7,7 +7,7 @@ import Data.Array
 
 import Control.Monad
 
-import Field.Class
+import Class.Field
 import Field.Goldilocks ( F ) 
 import Misc
 

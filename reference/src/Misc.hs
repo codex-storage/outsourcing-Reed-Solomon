@@ -214,6 +214,24 @@ safeIndex def arr j
   where
     (a,b) = bounds arr
 
+takeArray :: Int -> Array Int a -> Array Int a
+takeArray k arr = listArray (0,k-1) $ take k (elems arr)
+
+dropArray :: Int -> Array Int a -> Array Int a
+dropArray k arr = listArray (0,n1-k) [ arr!(k+j) | j<-[0..n1-k] ] where
+  (0,n1) = bounds arr
+
+appendArrays :: Array Int a -> Array Int a -> Array Int a
+appendArrays arr1 arr2 = listArray (0,n1+n2+1) $ (elems arr1 ++ elems arr2) where
+  (0,n1) = bounds arr1
+  (0,n2) = bounds arr2
+
+concatArrays :: [Array Int a] -> Array Int a
+concatArrays []   = error "concatArrays: empty list"
+concatArrays arrs = listArray (0,nn-1) (concatMap elems arrs) where
+  sizes = map arraySize arrs
+  nn    = sum sizes
+
 interleaveArrays' :: Array Int (Array Int a) -> Array Int a
 interleaveArrays' arrs 
   | nubOrd (elems sizes) == [n]   = big

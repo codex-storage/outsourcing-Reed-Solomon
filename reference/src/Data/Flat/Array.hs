@@ -25,6 +25,7 @@ import System.IO
 import System.IO.Unsafe
 
 import Data.Flat.Class
+import Class.Vector
 import Misc
 
 --------------------------------------------------------------------------------
@@ -33,7 +34,7 @@ import Misc
 -- foreign memory (not managed by the Haskell runtime). 
 --
 -- Note: the @Int@ means the number of objects in the array.
-data FlatArray a 
+data FlatArray (a :: Type) 
   = MkFlatArray !Int !(ForeignPtr Word64)
   deriving Show
 
@@ -128,6 +129,14 @@ dropFlatArrayIO k (MkFlatArray n fptr1) = do
       when (m>0) $ copyBytes ptr2 src (8*sz*m)
   return (MkFlatArray m fptr2)
 
+{-# NOINLINE mapFlatArrayIO #-}
+mapFlatArrayIO :: (a -> a) -> FlatArray a -> IO (FlatArray a)
+mapFlatArrayIO = error "mapFlatArrayIO: not yet implemented"
+
+{-# NOINLINE mapFlatArray #-}
+mapFlatArray :: (a -> a) -> FlatArray a -> FlatArray a
+mapFlatArray f arr = unsafePerformIO (mapFlatArrayIO f arr)
+
 ----------------------------------------
 
 -- | Read a flat array from a raw binary file. The size of the file determines the length of the array.
@@ -214,3 +223,20 @@ unpackFlatArrayToListIO (MkFlatArray len fptr) = do
       makeFlat src
 
 --------------------------------------------------------------------------------
+
+instance Flat a => Vector (FlatArray a) where
+
+  type VecElem (FlatArray a) = a
+
+  vecLength = flatArrayLength
+  vecPeek   = peekFlatArray
+  
+  vecToList    = unpackFlatArrayToList
+  vecFromList  = packFlatArrayFromList
+
+  vecToArray   = unpackFlatArray
+  vecFromArray = packFlatArray 
+
+  vecAppend = error "Vector/vecAppend/FlatArray: not implemented"
+  vecConcat = error "Vector/vecAConcat/FlatArray: not implemented"
+  vecMap    = mapFlatArray

@@ -48,7 +48,7 @@ forwardNTT :: Subgroup F -> Poly F -> FlatArray F
 forwardNTT sg (MkPoly (MkFlatArray n fptr2))
   | subgroupSize sg /= n   = error "forwardNTT: subgroup size differs from the array size"
   | otherwise              = unsafePerformIO $ do
-      fptr3 <- mallocForeignPtrArray n -- (n*4)
+      fptr3 <- mallocForeignPtrArray n 
       let MkGoldilocks gen = subgroupGen sg
       withForeignPtr fptr2 $ \ptr2 -> do
         withForeignPtr fptr3 $ \ptr3 -> do
@@ -60,7 +60,7 @@ inverseNTT :: Subgroup F -> FlatArray F -> Poly F
 inverseNTT sg (MkFlatArray n fptr2)
   | subgroupSize sg /= n   = error "inverseNTT: subgroup size differs from the array size"
   | otherwise              = unsafePerformIO $ do
-      fptr3 <- mallocForeignPtrArray n --(n*4)
+      fptr3 <- mallocForeignPtrArray n 
       let MkGoldilocks gen = subgroupGen sg
       withForeignPtr fptr2 $ \ptr2 -> do
         withForeignPtr fptr3 $ \ptr3 -> do
@@ -73,7 +73,7 @@ shiftedForwardNTT :: Subgroup F -> F -> Poly F -> FlatArray F
 shiftedForwardNTT sg (MkGoldilocks eta) (MkPoly (MkFlatArray n fptr2))
   | subgroupSize sg /= n   = error "shiftedForwardNTT: subgroup size differs from the array size"
   | otherwise              = unsafePerformIO $ do
-      fptr3 <- mallocForeignPtrArray n -- (n*4)
+      fptr3 <- mallocForeignPtrArray n 
       let MkGoldilocks gen = subgroupGen sg
       withForeignPtr fptr2 $ \ptr2 -> do
         withForeignPtr fptr3 $ \ptr3 -> do
@@ -86,7 +86,7 @@ shiftedInverseNTT :: Subgroup F -> F -> FlatArray F -> Poly F
 shiftedInverseNTT sg (MkGoldilocks eta) (MkFlatArray n fptr2)
   | subgroupSize sg /= n   = error "shiftedInverseNTT: subgroup size differs from the array size"
   | otherwise              = unsafePerformIO $ do
-      fptr3 <- mallocForeignPtrArray n -- (n*4)
+      fptr3 <- mallocForeignPtrArray n 
       withForeignPtr fptr2 $ \ptr2 -> do
         withForeignPtr fptr3 $ \ptr3 -> do
           c_ntt_inverse_shifted eta (subgroupCLogSize sg) (subgroupGenAsWord64 sg) ptr2 ptr3
@@ -99,7 +99,7 @@ asymmForwardNTT sg_src (MkPoly (MkFlatArray n fptr2)) sg_tgt
   | subgroupSize sg_src /= n   = error "asymmForwardNTT: subgroup size differs from the array size"
   | m < n                      = error "asymmForwardNTT: target subgroup size should be at least the source subgroup src"
   | otherwise                  = unsafePerformIO $ do
-      fptr3 <- mallocForeignPtrArray m -- (m*4)
+      fptr3 <- mallocForeignPtrArray m 
       let MkGoldilocks sgen1 = subgroupGen sg_src
       let MkGoldilocks sgen2 = subgroupGen sg_tgt
       withForeignPtr fptr2 $ \ptr2 -> do

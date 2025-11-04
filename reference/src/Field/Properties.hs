@@ -14,7 +14,7 @@ import Control.Monad
 import System.IO
 import System.Random
 
-import Field.Class
+import Class.Field
 
 --------------------------------------------------------------------------------
 -- compatibility hacks
