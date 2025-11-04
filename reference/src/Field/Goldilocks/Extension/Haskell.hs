@@ -108,6 +108,17 @@ isOne  (F2 r i) = Goldi.isOne  r && Goldi.isZero i
 inj :: F -> F2
 inj r = F2 r 0 
 
+proj :: F2 -> Maybe F
+proj (F2 r i) = if Goldi.isZero i then Just r else Nothing
+
+pack :: (F,F) -> F2
+pack (r,i) = F2 r i
+
+unpack :: F2 -> (F,F)
+unpack (F2 r i) = (r,i)
+
+--------------------------------------------------------------------------------
+
 neg :: F2 -> F2
 neg (F2 r i) = F2 (negate r) (negate i)
 

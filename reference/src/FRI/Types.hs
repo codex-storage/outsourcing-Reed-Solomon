@@ -87,6 +87,9 @@ newtype ReductionStrategy = MkRedStrategy
   }
   deriving (Eq,Show)
 
+reductionStrategyLength :: ReductionStrategy -> Int
+reductionStrategyLength = length . fromReductionStrategy
+
 instance Binary ReductionStrategy where
   put = putSmallList . fromReductionStrategy
   get = MkRedStrategy <$> getSmallList
@@ -122,6 +125,18 @@ data FriConfig = MkFriConfig
   , friGrindingBits      :: Log2                 -- ^ grinding hardness
   }
   deriving (Eq,Show)
+
+friCommitPhaseVectorSizes :: FriConfig -> [Log2] 
+friCommitPhaseVectorSizes (MkFriConfig{..}) = result where
+  result = go (rsEncodedSize friRSConfig) (fromReductionStrategy friReductionStrategy) 
+  go n []     = []
+  go n (a:as) = n : go (n-a) as
+
+friCommitPhaseTreeSizes :: FriConfig -> [Log2]
+friCommitPhaseTreeSizes (MkFriConfig{..}) = result where
+  result = go (rsEncodedSize friRSConfig) (fromReductionStrategy friReductionStrategy) 
+  go n []     = []
+  go n (a:as) = (n-a) : go (n-a) as
 
 instance Binary FriConfig where
   put (MkFriConfig{..}) = do
@@ -252,3 +267,44 @@ instance Binary FriProof where
      <*> get
 
 --------------------------------------------------------------------------------
+
+estimateFriProofSize :: FriConfig -> Int
+estimateFriProofSize friConfig@(MkFriConfig{..}) = total where
+
+  total         = friCfgSize + commitPhaseCaps + finalPolySize + (friNQueryRounds * queryRoundSize) + 8
+
+  arities       = fromReductionStrategy friReductionStrategy
+  nsteps        = length arities
+
+  rsCfgSize     = 1 + 1 + 8
+  redStratSize  = 1 + nsteps
+  friCfgSize    = rsCfgSize + 8 + 1 + redStratSize + 8 + 1
+
+  (phases2,_)      = friCommitPhaseSizesLog2 friConfig
+
+  merkleCapSize    = 32 * exp2_ friMerkleCapSize
+  commitPhaseCaps  = merkleCapSize * nsteps
+  finalPolySize    = 8 * exp2_ (rsDataSize - sum arities)
+
+  queryStepSize arity = 16 * exp2_ arity + 
+
+data FriQueryStep = MkFriQueryStep
+  { queryEvals      :: [FExt] 
+  , queryMerklePath :: RawMerklePath
+  }
+  deriving (Eq,Show)
+
+data FriQueryRound = MkFriQueryRound 
+  { queryRow              :: FRow
+  , queryInitialTreeProof :: RawMerklePath
+  , querySteps            :: [FriQueryStep]
+  }
+  deriving (Eq,Show)
+
+data FriProof = MkFriProof 
+  { proofFriConfig       :: FriConfig          -- ^ the FRI configuration
+  , proofCommitPhaseCaps :: [MerkleCap]        -- ^ commit phase Merkle caps
+  , proofFinalPoly       :: Poly FExt          -- ^ the final polynomial in coefficient form
+  , proofQueryRounds     :: [FriQueryRound]    -- ^ query rounds
+  , proofPowWitness      :: F                  -- ^ witness showing that the prover did PoW
+  }

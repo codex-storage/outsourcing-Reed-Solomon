@@ -139,6 +139,17 @@ binaryOpIO c_action x y = allocaBytesAligned 48 8 $ \ptr1 -> do
 inj :: F -> F2
 inj r = F2 r 0 
 
+proj :: F2 -> Maybe F
+proj (F2 r i) = if Goldi.isZero i then Just r else Nothing
+
+pack :: (F,F) -> F2
+pack (r,i) = F2 r i
+
+unpack :: F2 -> (F,F)
+unpack (F2 r i) = (r,i)
+
+--------------------------------------------------------------------------------
+
 neg, sqr, inv :: F2 -> F2
 neg x = unsafePerformIO (unaryOpIO c_goldilocks_ext_neg x)
 sqr x = unsafePerformIO (unaryOpIO c_goldilocks_ext_sqr x)

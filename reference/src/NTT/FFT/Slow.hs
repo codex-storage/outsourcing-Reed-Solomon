@@ -1,13 +1,13 @@
 
 {-# LANGUAGE ScopedTypeVariables #-}
-module NTT.Slow where
+module NTT.FFT.Slow where
 
 --------------------------------------------------------------------------------
 
 import Data.Array
 import Data.Bits
 
-import NTT.Poly
+import NTT.Poly.Naive
 import NTT.Subgroup
 
 import Field.Goldilocks

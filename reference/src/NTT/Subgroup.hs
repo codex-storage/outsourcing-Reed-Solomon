@@ -20,6 +20,9 @@ data Subgroup g = MkSubgroup
 subgroupSize :: Subgroup g -> Int
 subgroupSize = subgroupOrder
 
+subgroupLogSize :: Subgroup g -> Log2
+subgroupLogSize = exactLog2__ . subgroupSize
+
 getSubgroup :: Log2 -> Subgroup F
 getSubgroup log2@(Log2 n) 
   | n<0       = error "getSubgroup: negative logarithm"
