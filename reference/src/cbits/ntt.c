@@ -164,8 +164,6 @@ void goldilocks_ntt_inverse_noalloc(int m, int tgt_stride, const uint64_t *gpows
 
     tgt[0         ] = goldilocks_add( src[0] , src[1] );           // x + y
     tgt[tgt_stride] = goldilocks_sub( src[0] , src[1] );           // x - y
-    tgt[0         ] = goldilocks_div_by_2( tgt[0         ] );      // (x + y)/2
-    tgt[tgt_stride] = goldilocks_div_by_2( tgt[tgt_stride] );      // (x - y)/2
     return;
   }
 
@@ -177,8 +175,7 @@ void goldilocks_ntt_inverse_noalloc(int m, int tgt_stride, const uint64_t *gpows
       uint64_t gpow = gpows[j*tgt_stride];
       buf[j      ] = goldilocks_add( src[j] , src[j+halfN] );       // x + y
       buf[j+halfN] = goldilocks_sub( src[j] , src[j+halfN] );       // x - y
-      buf[j      ] = goldilocks_div_by_2( buf[j      ]        );    // (x + y) /  2
-      buf[j+halfN] = goldilocks_mul     ( buf[j+halfN] , gpow );    // (x - y) / (2*g^k)
+      buf[j+halfN] = goldilocks_mul( buf[j+halfN] , gpow );         // (x - y) / g^k
     }
 
     goldilocks_ntt_inverse_noalloc( m-1 , tgt_stride<<1 , gpows , buf         , buf + N , tgt              );
@@ -193,10 +190,10 @@ void goldilocks_ntt_inverse(int m, const uint64_t gen, const uint64_t *src, uint
   int N = (1<<m);
   int halfN = (N>>1);
   
-  // precalculate [1/2,g^{-1}/2,g^{-2}/2,g^{-3}/2...]
+  // precalculate [1,g^{-1},g^{-2},g^{-3}...]
   uint64_t *gpows = malloc( 8 * halfN );
   assert( gpows != 0 );
-  uint64_t x    = goldilocks_oneHalf;         // 1/2 
+  uint64_t x    = 1;
   uint64_t ginv = goldilocks_inv(gen);        // gen^-1
   for(int i=0; i<halfN; i++) {
     gpows[i] = x;
@@ -206,6 +203,12 @@ void goldilocks_ntt_inverse(int m, const uint64_t gen, const uint64_t *src, uint
   uint64_t *buf = malloc( 8 * (2*N) );
   assert( buf !=0 );
   goldilocks_ntt_inverse_noalloc( m, 1, gpows, src, buf, tgt );
+
+  uint64_t rescale = goldilocks_inv( N );
+  for(int i=0; i<N; i++) {
+    tgt[i] = goldilocks_mul( tgt[i] , rescale );
+  }
+
   free(buf);
   free(gpows);
 }
