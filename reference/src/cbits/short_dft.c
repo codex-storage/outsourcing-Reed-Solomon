@@ -30,7 +30,7 @@ const uint64_t IDFT4_INV_OMEGA     = 0xfffeffff00000001 ;
 const uint64_t IDFT4_J             = 0x0001000000000000 ;
 const uint64_t IDFT4_INV_4         = 0xbfffffff40000001 ;
 
-void short_inv_DFT_size_4_unscaled( int src_stride, int tgt_stride, uint64_t *src, uint64_t *tgt ) {
+void short_inv_DFT_size_4_unscaled( int src_stride, int tgt_stride, const uint64_t *src, uint64_t *tgt ) {
 
   int src_stride2 = src_stride  + src_stride ;
   int src_stride3 = src_stride2 + src_stride ;
@@ -57,7 +57,7 @@ void short_inv_DFT_size_4_unscaled( int src_stride, int tgt_stride, uint64_t *sr
 
 }
 
-void short_fwd_DFT_size_4( int src_stride, int tgt_stride, uint64_t *src, uint64_t *tgt ) {
+void short_fwd_DFT_size_4( int src_stride, int tgt_stride, const uint64_t *src, uint64_t *tgt ) {
   short_inv_DFT_size_4_unscaled( src_stride, tgt_stride, src, tgt );
 
   int tgt_stride3 = 3*tgt_stride;
@@ -67,7 +67,7 @@ void short_fwd_DFT_size_4( int src_stride, int tgt_stride, uint64_t *src, uint64
   tgt[tgt_stride3] = tmp;
 }
 
-void short_inv_DFT_size_4_rescaled( int src_stride, int tgt_stride, uint64_t *src, uint64_t *tgt ) {
+void short_inv_DFT_size_4_rescaled( int src_stride, int tgt_stride, const uint64_t *src, uint64_t *tgt ) {
 
   short_inv_DFT_size_4_unscaled( src_stride, tgt_stride, src, tgt );
 
@@ -89,7 +89,7 @@ const uint64_t DFT8_J             = 0x0001000000000000 ;
 const uint64_t DFT8_COS_U         = 0xffffff7f00800081 ;
 const uint64_t DFT8_MINUS_J_SIN_U = 0xffffff7eff800081 ;
 
-void short_fwd_DFT_size_8( int src_stride, int tgt_stride, uint64_t *src, uint64_t *tgt ) {
+void short_fwd_DFT_size_8( int src_stride, int tgt_stride, const uint64_t *src, uint64_t *tgt ) {
   //  u     = 2pi/8
   //  omega = cos(u) + i*sin(u)
   // 
@@ -164,7 +164,7 @@ const uint64_t IDFT8_INV_8         = 0xdfffffff20000001 ;
 
 //--------------------------------------
 
-void short_inv_DFT_size_8_unscaled( int src_stride, int tgt_stride, uint64_t *src, uint64_t *tgt ) {
+void short_inv_DFT_size_8_unscaled( int src_stride, int tgt_stride, const uint64_t *src, uint64_t *tgt ) {
   //  u     = 2pi/8
   //  omega = cos(u) + i*sin(u)
   // 
@@ -231,7 +231,7 @@ void short_inv_DFT_size_8_unscaled( int src_stride, int tgt_stride, uint64_t *sr
 
 //------------------
 
-void short_inv_DFT_size_8_rescaled( int src_stride, int tgt_stride, uint64_t *src, uint64_t *tgt ) {
+void short_inv_DFT_size_8_rescaled( int src_stride, int tgt_stride, const uint64_t *src, uint64_t *tgt ) {
 
   short_inv_DFT_size_8_unscaled( src_stride, tgt_stride, src, tgt );
 
@@ -269,7 +269,7 @@ const uint64_t DFT16_COS_3U_MINUS_U         = 0x0807fff7fff7f800 ;
 const uint64_t DFT16_J_SIN_3U_MINUS_U       = 0x08080007fff80800 ;
 const uint64_t DFT16_J_SIN_MINUS_3U_MINUS_U = 0x07f800080007f800 ;
 
-void short_fwd_DFT_size_16( int src_stride, int tgt_stride, uint64_t *src, uint64_t *tgt ) {
+void short_fwd_DFT_size_16( int src_stride, int tgt_stride, const uint64_t *src, uint64_t *tgt ) {
 
   int src_stride2 = src_stride  + src_stride ;
   int src_stride3 = src_stride2 + src_stride ;
@@ -408,7 +408,7 @@ const uint64_t IDFT16_COS_3U_MINUS_U         = 0x0807fff7fff7f800 ;
 const uint64_t IDFT16_J_SIN_3U_MINUS_U       = 0x08080007fff80800 ;
 const uint64_t IDFT16_J_SIN_MINUS_3U_MINUS_U = 0x07f800080007f800 ;
 
-void short_inv_DFT_size_16_unscaled( int src_stride, int tgt_stride, uint64_t *src, uint64_t *tgt ) {
+void short_inv_DFT_size_16_unscaled( int src_stride, int tgt_stride, const uint64_t *src, uint64_t *tgt ) {
 
   int src_stride2 = src_stride  + src_stride ;
   int src_stride3 = src_stride2 + src_stride ;
@@ -532,7 +532,7 @@ void short_inv_DFT_size_16_unscaled( int src_stride, int tgt_stride, uint64_t *s
 
 //------------------
 
-void short_inv_DFT_size_16_rescaled( int src_stride, int tgt_stride, uint64_t *src, uint64_t *tgt ) {
+void short_inv_DFT_size_16_rescaled( int src_stride, int tgt_stride, const uint64_t *src, uint64_t *tgt ) {
 
   short_inv_DFT_size_16_unscaled( src_stride, tgt_stride, src, tgt );
 

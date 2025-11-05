@@ -6,40 +6,56 @@
 #include <assert.h>
 
 #include "goldilocks.h"
+#include "short_dft.h"
 #include "ntt.h"
 
 // -----------------------------------------------------------------------------
 
 void goldilocks_ntt_forward_noalloc(int m, int src_stride, const uint64_t *gpows, const uint64_t *src, uint64_t *buf, uint64_t *tgt) {
 
-  if (m==0) {
-    tgt[0] = src[0];
-    return;
-  }
+  switch(m) {
 
-  if (m==1) {
-    // N = 2
-    tgt[0] = goldilocks_add( src[0] , src[src_stride] );    // x + y
-    tgt[1] = goldilocks_sub( src[0] , src[src_stride] );    // x - y
-    return;
-  }
+    case 4:
+      short_fwd_DFT_size_16( src_stride, 1, src, tgt );
+      break;
 
-  else {
-    int N     = (1<< m   );
-    int halfN = (1<<(m-1));
+    case 3:
+      short_fwd_DFT_size_8( src_stride, 1, src, tgt );
+      break;
 
-    goldilocks_ntt_forward_noalloc( m-1 , src_stride<<1 , gpows , src              , buf + N , buf         );
-    goldilocks_ntt_forward_noalloc( m-1 , src_stride<<1 , gpows , src + src_stride , buf + N , buf + halfN );
+    case 2:
+      short_fwd_DFT_size_4( src_stride, 1, src, tgt );
+      break;
 
-    for(int j=0; j<halfN; j++) {
-      const uint64_t gpow = gpows[j*src_stride];
-      tgt[j      ] = goldilocks_mul( buf[j+halfN] , gpow   );   //   g*v[k]
-      tgt[j+halfN] = goldilocks_neg( tgt[j      ]          );   // - g*v[k]
-      tgt[j      ] = goldilocks_add( tgt[j      ] , buf[j] );   // u[k] + g*v[k]
-      tgt[j+halfN] = goldilocks_add( tgt[j+halfN] , buf[j] );   // u[k] - g*v[k]
+    case 1:
+      // N = 2
+      tgt[0] = goldilocks_add( src[0] , src[src_stride] );    // x + y
+      tgt[1] = goldilocks_sub( src[0] , src[src_stride] );    // x - y
+      return;
+
+    case 0:  
+      tgt[0] = src[0];
+      return;
+   
+    default: {
+
+      int N     = (1<< m   );
+      int halfN = (1<<(m-1));
+      
+      goldilocks_ntt_forward_noalloc( m-1 , src_stride<<1 , gpows , src              , buf + N , buf         );
+      goldilocks_ntt_forward_noalloc( m-1 , src_stride<<1 , gpows , src + src_stride , buf + N , buf + halfN );
+      
+      for(int j=0; j<halfN; j++) {
+        const uint64_t gpow = gpows[j*src_stride];
+        tgt[j      ] = goldilocks_mul( buf[j+halfN] , gpow   );   //   g^k * v[k]
+        tgt[j+halfN] = goldilocks_neg( tgt[j      ]          );   // - g^k * v[k]
+        tgt[j      ] = goldilocks_add( tgt[j      ] , buf[j] );   // u[k] + g^k * v[k]
+        tgt[j+halfN] = goldilocks_add( tgt[j+halfN] , buf[j] );   // u[k] - g^k * v[k]
+      }
     }
   }
 }
+
 
 // forward number-theoretical transform (evaluation of a polynomial)
 // `src` and `tgt` should be `N = 2^m` sized arrays of field elements
@@ -154,32 +170,46 @@ const uint64_t goldilocks_oneHalf = 0x7fffffff80000001ull;
 
 void goldilocks_ntt_inverse_noalloc(int m, int tgt_stride, const uint64_t *gpows, const uint64_t *src, uint64_t *buf, uint64_t *tgt) {
 
-  if (m==0) {
-    tgt[0] = src[0];
-    return;
-  }
+  switch(m) {
 
-  if (m==1) {
-    // N = 2
+    case 0:
+      tgt[0] = src[0];
+      break;
 
-    tgt[0         ] = goldilocks_add( src[0] , src[1] );           // x + y
-    tgt[tgt_stride] = goldilocks_sub( src[0] , src[1] );           // x - y
-    return;
-  }
+    case 1:
+      tgt[0         ] = goldilocks_add( src[0] , src[1] );           // x + y
+      tgt[tgt_stride] = goldilocks_sub( src[0] , src[1] );           // x - y
+      break;
 
-  else {
-    int N     = (1<< m   );
-    int halfN = (1<<(m-1));
+    case 2:
+      short_inv_DFT_size_4_unscaled( 1, tgt_stride, src, tgt );
+      break;
 
-    for(int j=0; j<halfN; j++) {
-      uint64_t gpow = gpows[j*tgt_stride];
-      buf[j      ] = goldilocks_add( src[j] , src[j+halfN] );       // x + y
-      buf[j+halfN] = goldilocks_sub( src[j] , src[j+halfN] );       // x - y
-      buf[j+halfN] = goldilocks_mul( buf[j+halfN] , gpow );         // (x - y) / g^k
+    case 3:
+      short_inv_DFT_size_8_unscaled( 1, tgt_stride, src, tgt );
+      break;
+
+    case 4:
+      short_inv_DFT_size_16_unscaled( 1, tgt_stride, src, tgt );
+      break;
+
+    default: {
+
+      int N     = (1<< m   );
+      int halfN = (1<<(m-1));
+  
+      for(int j=0; j<halfN; j++) {
+        uint64_t gpow = gpows[j*tgt_stride];
+        buf[j      ] = goldilocks_add( src[j] , src[j+halfN] );       // x + y
+        buf[j+halfN] = goldilocks_sub( src[j] , src[j+halfN] );       // x - y
+        buf[j+halfN] = goldilocks_mul( buf[j+halfN] , gpow );         // (x - y) / g^k
+      }
+  
+      goldilocks_ntt_inverse_noalloc( m-1 , tgt_stride<<1 , gpows , buf         , buf + N , tgt              );
+      goldilocks_ntt_inverse_noalloc( m-1 , tgt_stride<<1 , gpows , buf + halfN , buf + N , tgt + tgt_stride );
+      break;
     }
 
-    goldilocks_ntt_inverse_noalloc( m-1 , tgt_stride<<1 , gpows , buf         , buf + N , tgt              );
-    goldilocks_ntt_inverse_noalloc( m-1 , tgt_stride<<1 , gpows , buf + halfN , buf + N , tgt + tgt_stride );
   }
 }
 
