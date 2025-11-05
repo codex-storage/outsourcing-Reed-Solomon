@@ -268,6 +268,7 @@ instance Binary FriProof where
 
 --------------------------------------------------------------------------------
 
+{-
 estimateFriProofSize :: FriConfig -> Int
 estimateFriProofSize friConfig@(MkFriConfig{..}) = total where
 
@@ -308,3 +309,5 @@ data FriProof = MkFriProof
   , proofQueryRounds     :: [FriQueryRound]    -- ^ query rounds
   , proofPowWitness      :: F                  -- ^ witness showing that the prover did PoW
   }
+
+-}

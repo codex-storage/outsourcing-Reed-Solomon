@@ -26,7 +26,13 @@ import Data.Flat as L
 
 --------------------------------------------------------------------------------
 
-newtype Poly a = MkPoly (L.FlatArray a)
+newtype Poly a 
+  = MkPoly (L.FlatArray a) 
+  deriving Show
+
+-- TEMPORARY HACK
+instance (Eq a, Flat a) => Eq (Poly a) where
+  p == q = (coeffs p == coeffs q)
 
 pattern XPoly n arr = MkPoly (L.MkFlatArray n arr)
 

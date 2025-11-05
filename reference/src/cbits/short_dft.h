@@ -1,4 +1,6 @@
 
+#ifndef _SHORT_DFT_H_INCLUDED_
+
 #include <stdint.h>
 
 //------------------------------------------------------------------------------
@@ -22,3 +24,5 @@ void short_inv_DFT_size_16_rescaled( int src_stride, int tgt_stride, uint64_t *s
 // void short_inv_DFT_size_4_ext_rescaled( int src_stride, int tgt_stride, uint64_t *src, uint64_t *tgt );
 
 //------------------------------------------------------------------------------
+
+#endif // _SHORT_DFT_H_INCLUDED_

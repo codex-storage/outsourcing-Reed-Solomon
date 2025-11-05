@@ -1,6 +1,8 @@
 
 // quadratic field extension F[x] = F(x) / (x^2 - 7) over the Goldilocks field
 
+#ifndef _GOLDILOCKS_EXT_H_INCLUDED_
+
 #include <stdint.h>
 #include "goldilocks.h"
 
@@ -21,3 +23,4 @@ void goldilocks_ext_pow(const uint64_t *b , int e             , uint64_t *out);
 
 //------------------------------------------------------------------------------
 
+#endif // _GOLDILOCKS_EXT_H_INCLUDED_

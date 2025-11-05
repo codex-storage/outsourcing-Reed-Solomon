@@ -1,4 +1,6 @@
 
+#ifndef _NTT_H_INCLUDED_
+
 #include <stdint.h>
 
 //------------------------------------------------------------------------------
@@ -12,3 +14,5 @@ void goldilocks_ntt_inverse           (              int m, uint64_t gen, const 
 void goldilocks_ntt_inverse_shifted   (uint64_t eta, int m, uint64_t gen, const uint64_t *src, uint64_t *tgt);
 
 //------------------------------------------------------------------------------
+
+#endif // _NTT_H_INCLUDED_

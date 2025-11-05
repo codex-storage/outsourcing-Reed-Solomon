@@ -1,4 +1,6 @@
 
+// Monolith permutation and hash function
+
 #include <assert.h>
 #include <string.h>
 
@@ -242,3 +244,4 @@ void goldilocks_monolith_bytes_digest(int rate, int N, const uint8_t *input, uin
 }
 
 //------------------------------------------------------------------------------
+

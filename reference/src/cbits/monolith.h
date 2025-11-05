@@ -1,4 +1,7 @@
 
+
+#ifndef _MONOLITH_H_INCLUDED_
+
 #include <stdint.h>
 
 //------------------------------------------------------------------------------
@@ -11,3 +14,5 @@ void goldilocks_monolith_bytes_digest    (int rate, int N, const uint8_t  *input
 void goldilocks_monolith_felts_digest    (int rate, int N, const uint64_t *input, uint64_t *hash);
 
 //------------------------------------------------------------------------------
+
+#endif // _MONOLITH_H_INCLUDED_

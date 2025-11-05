@@ -1,6 +1,8 @@
 
 // the "Goldilocks" prime field of size `p = 2^64 - 2^32 + 1`
 
+#ifndef _GOLDILOCKS_H_INCLUDED_
+
 #include <stdint.h>
 
 //------------------------------------------------------------------------------
@@ -44,3 +46,5 @@ void goldilocks_convert_31_bytes_to_4_field_elements (      const uint8_t *ptr, 
 void goldilocks_convert_bytes_to_field_elements ( int rate, const uint8_t *ptr, uint64_t *felts );
 
 //------------------------------------------------------------------------------
+
+#endif // _GOLDILOCKS_H_INCLUDED_

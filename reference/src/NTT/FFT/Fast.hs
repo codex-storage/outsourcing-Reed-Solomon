@@ -16,7 +16,7 @@ import System.IO.Unsafe
 
 import Data.Flat
 
-import NTT.Poly
+import NTT.Poly.Flat
 import NTT.Subgroup
 import Field.Goldilocks
 import Misc
